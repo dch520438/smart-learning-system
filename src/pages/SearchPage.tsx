@@ -80,11 +80,40 @@ export function SearchPage() {
   // 计算总结果数
   const totalResults = Object.values(results).reduce((sum, items) => sum + items.length, 0);
 
+  // 处理结果项点击
+  const handleResultClick = (item: any, type: string) => {
+    switch (type) {
+      case 'knowledge':
+        navigate('/knowledge');
+        break;
+      case 'note':
+        navigate('/notes');
+        break;
+      case 'question':
+        // 根据题目类型导航到不同页面
+        if (item.isMistake) {
+          navigate('/mistakes');
+        } else {
+          navigate('/patterns');
+        }
+        break;
+      case 'memorize':
+        navigate('/memorize');
+        break;
+      default:
+        break;
+    }
+  };
+
   // 渲染结果项
   const renderResultItem = (item: any, type: string) => {
     if (showMode === 'card') {
       return (
-        <div key={item.id} className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-blue-200">
+        <div 
+          key={item.id} 
+          className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-blue-200 cursor-pointer"
+          onClick={() => handleResultClick(item, type)}
+        >
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <div className="flex items-center space-x-3 mb-3">
@@ -138,7 +167,11 @@ export function SearchPage() {
       );
     } else {
       return (
-        <div key={item.id} className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 hover:border-blue-200">
+        <div 
+          key={item.id} 
+          className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 hover:border-blue-200 cursor-pointer"
+          onClick={() => handleResultClick(item, type)}
+        >
           <div className="flex items-center space-x-3">
             <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
               type === 'knowledge' ? 'bg-blue-100' :
