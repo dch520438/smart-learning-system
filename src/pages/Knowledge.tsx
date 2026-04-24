@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icons';
 import { useAppStore } from '../store';
@@ -17,6 +17,9 @@ export function Knowledge() {
     tags: '',
     images: [] as string[],
   });
+  const [filterTag, setFilterTag] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<'latest' | 'oldest' | 'title'>('latest');
+  const [showMode, setShowMode] = useState<'card' | 'list'>('card');
 
   if (!currentSubject) {
     navigate('/');
@@ -24,6 +27,34 @@ export function Knowledge() {
   }
 
   const subjectKnowledge = knowledgePoints.filter((kp) => kp.subjectId === currentSubject.id);
+
+  // 获取所有标签
+  const allTags = useMemo(() => {
+    const tags = new Set<string>();
+    subjectKnowledge.forEach(kp => kp.tags.forEach(tag => tags.add(tag)));
+    return Array.from(tags);
+  }, [subjectKnowledge]);
+
+  // 筛选和排序知识点
+  const filteredAndSortedKnowledge = useMemo(() => {
+    let filtered = subjectKnowledge;
+    
+    // 按标签筛选
+    if (filterTag) {
+      filtered = filtered.filter(kp => kp.tags.includes(filterTag));
+    }
+    
+    // 排序
+    return [...filtered].sort((a, b) => {
+      if (sortBy === 'latest') {
+        return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+      } else if (sortBy === 'oldest') {
+        return new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
+      } else { // title
+        return a.title.localeCompare(b.title);
+      }
+    });
+  }, [subjectKnowledge, filterTag, sortBy]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,45 +126,121 @@ export function Knowledge() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 space-y-4 sm:space-y-0">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">知识归纳</h1>
             <p className="text-gray-600 mt-1">整理和管理{currentSubject.name}知识点</p>
           </div>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-xl font-medium transition-colors flex items-center space-x-2"
+            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-xl font-medium transition-colors flex items-center space-x-2 self-start sm:self-auto"
           >
             <Icon name="plus" size={20} />
             <span>添加知识点</span>
           </button>
         </div>
 
-        {subjectKnowledge.length === 0 ? (
+        {/* 筛选、排序和显示模式功能 */}
+        <div className="bg-white rounded-2xl p-4 shadow-sm mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* 按标签筛选 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">按标签筛选</label>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setFilterTag(null)}
+                  className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${filterTag === null ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                >
+                  全部
+                </button>
+                {allTags.map((tag) => (
+                  <button
+                    key={tag}
+                    onClick={() => setFilterTag(tag)}
+                    className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${filterTag === tag ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                  >
+                    {tag}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 排序方式 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">排序方式</label>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as 'latest' | 'oldest' | 'title')}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full"
+              >
+                <option value="latest">最新修改</option>
+                <option value="oldest">最早创建</option>
+                <option value="title">按标题排序</option>
+              </select>
+            </div>
+
+            {/* 显示模式 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">显示模式</label>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => setShowMode('card')}
+                  className={`flex-1 py-2 rounded-lg border transition-colors flex items-center justify-center space-x-2 ${showMode === 'card' ? 'bg-blue-100 border-blue-500 text-blue-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+                >
+                  <Icon name="grid" size={16} />
+                  <span>卡片</span>
+                </button>
+                <button
+                  onClick={() => setShowMode('list')}
+                  className={`flex-1 py-2 rounded-lg border transition-colors flex items-center justify-center space-x-2 ${showMode === 'list' ? 'bg-blue-100 border-blue-500 text-blue-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+                >
+                  <Icon name="list" size={16} />
+                  <span>列表</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {filteredAndSortedKnowledge.length === 0 ? (
           <div className="text-center py-16">
             <div className="w-24 h-24 bg-blue-100 rounded-full mx-auto flex items-center justify-center mb-6">
               <Icon name="book-open-check" size={48} className="text-blue-500" />
             </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">还没有知识点</h3>
-            <p className="text-gray-600 mb-6">点击上方按钮添加第一个知识点</p>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              {filterTag ? `没有包含标签 "${filterTag}" 的知识点` : '还没有知识点'}
+            </h3>
+            <p className="text-gray-600 mb-6">
+              {filterTag ? '尝试选择其他标签或添加新的知识点' : '点击上方按钮添加第一个知识点'}
+            </p>
           </div>
-        ) : (
-          <div className="grid gap-4">
-            {subjectKnowledge.map((kp) => (
-              <div key={kp.id} className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow">
-                <div className="flex items-start justify-between">
+        ) : showMode === 'card' ? (
+          <div className="grid gap-6">
+            {filteredAndSortedKnowledge.map((kp) => (
+              <div key={kp.id} className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-blue-200">
+                <div className="flex flex-col md:flex-row md:items-start justify-between space-y-4 md:space-y-0">
                   <div className="flex-1">
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">{kp.title}</h3>
-                    <div className="text-gray-700 mb-4" dangerouslySetInnerHTML={{ __html: kp.content }} />
+                    <div className="flex items-center space-x-2 mb-3">
+                      <div className="w-2 h-8 bg-blue-500 rounded-full"></div>
+                      <h3 className="text-xl font-semibold text-gray-900">{kp.title}</h3>
+                      <span className="text-xs text-gray-500 ml-auto">
+                        {new Date(kp.updatedAt).toLocaleDateString('zh-CN')}
+                      </span>
+                    </div>
+                    <div className="text-gray-700 mb-4 prose max-w-none" dangerouslySetInnerHTML={{ __html: kp.content }} />
                     {kp.images && kp.images.length > 0 && (
-                      <div className="grid grid-cols-4 gap-2 mb-4">
+                      <div className="grid grid-cols-4 gap-3 mb-4">
                         {kp.images.map((image, index) => (
-                          <img
-                            key={index}
-                            src={image}
-                            alt={`图片 ${index + 1}`}
-                            className="w-full h-24 object-cover rounded-lg"
-                          />
+                          <div key={index} className="relative group">
+                            <img
+                              src={image}
+                              alt={`图片 ${index + 1}`}
+                              className="w-full h-32 object-cover rounded-lg transition-transform duration-300 group-hover:scale-105"
+                            />
+                            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 rounded-lg transition-colors duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                              <Icon name="zoom-in" size={20} className="text-white" />
+                            </div>
+                          </div>
                         ))}
                       </div>
                     )}
@@ -142,7 +249,8 @@ export function Knowledge() {
                         {kp.tags.map((tag, index) => (
                           <span
                             key={index}
-                            className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm"
+                            onClick={() => setFilterTag(tag)}
+                            className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm cursor-pointer hover:bg-blue-200 transition-colors"
                           >
                             {tag}
                           </span>
@@ -150,18 +258,77 @@ export function Knowledge() {
                       </div>
                     )}
                   </div>
-                  <div className="flex items-center space-x-2 ml-4">
+                  <div className="flex flex-col items-center space-y-2 ml-0 md:ml-4 pt-2 md:pt-0">
                     <button
                       onClick={() => handleEdit(kp)}
                       className="p-2 text-gray-500 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
+                      title="编辑"
                     >
                       <Icon name="edit" size={20} />
                     </button>
                     <button
                       onClick={() => handleDelete(kp.id)}
                       className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                      title="删除"
                     >
                       <Icon name="trash2" size={20} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {filteredAndSortedKnowledge.map((kp) => (
+              <div key={kp.id} className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 hover:border-blue-200">
+                <div className="flex items-start space-x-4">
+                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Icon name="book-open-check" size={24} className="text-blue-600" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-lg font-semibold text-gray-900">{kp.title}</h3>
+                      <span className="text-xs text-gray-500">
+                        {new Date(kp.updatedAt).toLocaleDateString('zh-CN')}
+                      </span>
+                    </div>
+                    <div className="text-gray-700 text-sm mb-3" dangerouslySetInnerHTML={{ __html: kp.content.substring(0, 150) + '...' }} />
+                    <div className="flex flex-wrap items-center gap-2">
+                      {kp.images && kp.images.length > 0 && (
+                        <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-xs">
+                          {kp.images.length} 张图片
+                        </span>
+                      )}
+                      {kp.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {kp.tags.map((tag, index) => (
+                            <span
+                              key={index}
+                              onClick={() => setFilterTag(tag)}
+                              className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm cursor-pointer hover:bg-blue-200 transition-colors"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-center space-y-2 ml-4 pt-2">
+                    <button
+                      onClick={() => handleEdit(kp)}
+                      className="p-2 text-gray-500 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
+                      title="编辑"
+                    >
+                      <Icon name="edit" size={18} />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(kp.id)}
+                      className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                      title="删除"
+                    >
+                      <Icon name="trash2" size={18} />
                     </button>
                   </div>
                 </div>
@@ -182,7 +349,7 @@ export function Knowledge() {
                     onClick={() => {
                       setIsModalOpen(false);
                       setEditingId(null);
-                      setFormData({ title: '', content: '', tags: '' });
+                      setFormData({ title: '', content: '', tags: '', images: [] });
                     }}
                     className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                   >
@@ -280,10 +447,10 @@ export function Knowledge() {
                     <button
                       type="button"
                       onClick={() => {
-                        setIsModalOpen(false);
-                        setEditingId(null);
-                        setFormData({ title: '', content: '', tags: '' });
-                      }}
+                      setIsModalOpen(false);
+                      setEditingId(null);
+                      setFormData({ title: '', content: '', tags: '', images: [] });
+                    }}
                       className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
                     >
                       取消

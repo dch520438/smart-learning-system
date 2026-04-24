@@ -45,6 +45,7 @@ export interface Note {
   content: string;
   tags: string[];
   images: string[];
+  category: 'method' | 'note' | 'skill' | 'habit';
   createdAt: Date;
   updatedAt: Date;
 }
@@ -99,6 +100,7 @@ export interface MemorizeItem {
   title: string;
   content: string;
   tags: string[];
+  images: string[];
   isMemorized: boolean;
   createdAt: Date;
   updatedAt: Date;

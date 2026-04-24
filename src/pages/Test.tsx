@@ -32,7 +32,7 @@ export function Test() {
   const [isTestStarted, setIsTestStarted] = useState(false);
   const [isTestFinished, setIsTestFinished] = useState(false);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [selectedQuestions, setSelectedQuestions] = useState<(Question | (MemorizeItem & { type: 'memorize' }))[]>([]);
+  const [selectedQuestions, setSelectedQuestions] = useState<Array<Question | (MemorizeItem & { type: 'memorize'; answer: string })>>([]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [score, setScore] = useState(0);
   const [totalScore, setTotalScore] = useState(0);
@@ -68,7 +68,7 @@ export function Test() {
       filteredQuestions = filteredQuestions.filter((q) => q.difficulty === testConfig.difficulty);
     }
 
-    let totalItems = [...filteredQuestions];
+    let totalItems: Array<Question | (MemorizeItem & { type: 'memorize'; answer: string })> = [...filteredQuestions];
     
     // 如果包含必背必记内容
     if (testConfig.includeMemorize && subjectMemorizeItems.length > 0) {

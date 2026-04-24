@@ -24,6 +24,10 @@ export function Memorize() {
   const [testMode, setTestMode] = useState<'text' | 'voice' | 'fill'>('text');
   const [fillBlanks, setFillBlanks] = useState<string[]>([]);
   const [fillAnswers, setFillAnswers] = useState<string[]>([]);
+  const [filterTag, setFilterTag] = useState<string | null>(null);
+  const [filterStatus, setFilterStatus] = useState<'all' | 'memorized' | 'not-memorized'>('all');
+  const [sortBy, setSortBy] = useState<'latest' | 'oldest' | 'title'>('latest');
+  const [showMode, setShowMode] = useState<'card' | 'list'>('card');
 
   if (!currentSubject) {
     navigate('/');
@@ -34,6 +38,29 @@ export function Memorize() {
   const memorizedCount = subjectMemorizeItems.filter((item) => item.isMemorized).length;
   const totalCount = subjectMemorizeItems.length;
   const progress = totalCount > 0 ? (memorizedCount / totalCount) * 100 : 0;
+
+  // 获取所有标签
+  const allTags = Array.from(new Set(subjectMemorizeItems.flatMap(item => item.tags)));
+
+  // 筛选和排序必背内容
+  const filteredAndSortedItems = subjectMemorizeItems
+    .filter(item => {
+      // 按状态筛选
+      if (filterStatus === 'memorized' && !item.isMemorized) return false;
+      if (filterStatus === 'not-memorized' && item.isMemorized) return false;
+      // 按标签筛选
+      if (filterTag && !item.tags.includes(filterTag)) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      if (sortBy === 'latest') {
+        return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+      } else if (sortBy === 'oldest') {
+        return new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
+      } else { // title
+        return a.title.localeCompare(b.title);
+      }
+    });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -253,81 +280,254 @@ export function Memorize() {
               </div>
             </div>
 
-            <div className="grid gap-4">
-              {subjectMemorizeItems.map((item) => (
-                <div key={item.id} className={`bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow ${item.isMemorized ? 'border-l-4 border-purple-500' : ''}`}>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-4">
-                        <button
-                          onClick={() => toggleMemorizeStatus(item.id)}
-                          className={`p-2 rounded-full transition-colors ${
-                            item.isMemorized
-                              ? 'bg-green-100 text-green-500'
-                              : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
-                          }`}
-                        >
-                          <Icon name={item.isMemorized ? 'check-circle2' : 'circle'} size={20} />
-                        </button>
-                        <h3 className={`text-xl font-semibold ${
-                          item.isMemorized ? 'text-gray-500 line-through' : 'text-gray-900'
-                        }`}>
-                          {item.title}
-                        </h3>
-                      </div>
-                      <div className={`text-gray-700 mb-4 ${
-                        item.isMemorized ? 'line-through' : ''
-                      }`} dangerouslySetInnerHTML={{ __html: item.content }} />
-                      {item.images && item.images.length > 0 && (
-                        <div className="grid grid-cols-4 gap-2 mb-4">
-                          {item.images.map((image, index) => (
-                            <img
-                              key={index}
-                              src={image}
-                              alt={`图片 ${index + 1}`}
-                              className="w-full h-24 object-cover rounded-lg"
-                            />
-                          ))}
-                        </div>
-                      )}
-                      {item.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-2">
-                          {item.tags.map((tag, index) => (
-                            <span
-                              key={index}
-                              className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm"
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex items-center space-x-2 ml-4">
-                      <button
-                        onClick={() => handleStartTest(item)}
-                        className="p-2 text-gray-500 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
-                        title="测试记忆"
-                      >
-                        <Icon name="check-circle2" size={20} />
-                      </button>
-                      <button
-                        onClick={() => handleEdit(item)}
-                        className="p-2 text-gray-500 hover:text-purple-500 hover:bg-purple-50 rounded-lg transition-colors"
-                      >
-                        <Icon name="edit" size={20} />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(item.id)}
-                        className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                      >
-                        <Icon name="trash2" size={20} />
-                      </button>
-                    </div>
+            {/* 筛选、排序和显示模式功能 */}
+            <div className="bg-white rounded-2xl p-4 shadow-sm mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                {/* 按状态筛选 */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">按状态筛选</label>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => setFilterStatus('all')}
+                      className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${filterStatus === 'all' ? 'bg-purple-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                    >
+                      全部
+                    </button>
+                    <button
+                      onClick={() => setFilterStatus('memorized')}
+                      className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${filterStatus === 'memorized' ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                    >
+                      已记忆
+                    </button>
+                    <button
+                      onClick={() => setFilterStatus('not-memorized')}
+                      className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${filterStatus === 'not-memorized' ? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                    >
+                      未记忆
+                    </button>
                   </div>
                 </div>
-              ))}
+
+                {/* 按标签筛选 */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">按标签筛选</label>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => setFilterTag(null)}
+                      className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${filterTag === null ? 'bg-purple-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                    >
+                      全部
+                    </button>
+                    {allTags.map((tag) => (
+                      <button
+                        key={tag}
+                        onClick={() => setFilterTag(tag)}
+                        className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${filterTag === tag ? 'bg-purple-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                      >
+                        {tag}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 排序方式 */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">排序方式</label>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as 'latest' | 'oldest' | 'title')}
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 w-full"
+                  >
+                    <option value="latest">最新修改</option>
+                    <option value="oldest">最早创建</option>
+                    <option value="title">按标题排序</option>
+                  </select>
+                </div>
+
+                {/* 显示模式 */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">显示模式</label>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => setShowMode('card')}
+                      className={`flex-1 py-2 rounded-lg border transition-colors flex items-center justify-center space-x-2 ${showMode === 'card' ? 'bg-purple-100 border-purple-500 text-purple-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+                    >
+                      <Icon name="grid" size={16} />
+                      <span>卡片</span>
+                    </button>
+                    <button
+                      onClick={() => setShowMode('list')}
+                      className={`flex-1 py-2 rounded-lg border transition-colors flex items-center justify-center space-x-2 ${showMode === 'list' ? 'bg-purple-100 border-purple-500 text-purple-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+                    >
+                      <Icon name="list" size={16} />
+                      <span>列表</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
+
+            {filteredAndSortedItems.length === 0 ? (
+              <div className="text-center py-16">
+                <div className="w-24 h-24 bg-purple-100 rounded-full mx-auto flex items-center justify-center mb-6">
+                  <Icon name="brain" size={48} className="text-purple-500" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">没有符合条件的必背内容</h3>
+                <p className="text-gray-600 mb-6">尝试调整筛选条件或添加新的必背内容</p>
+              </div>
+            ) : showMode === 'card' ? (
+              <div className="grid gap-4">
+                {filteredAndSortedItems.map((item) => (
+                  <div key={item.id} className={`bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow ${item.isMemorized ? 'border-l-4 border-purple-500' : ''}`}>
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-3 mb-4">
+                          <button
+                            onClick={() => toggleMemorizeStatus(item.id)}
+                            className={`p-2 rounded-full transition-colors ${
+                              item.isMemorized
+                                ? 'bg-green-100 text-green-500'
+                                : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+                            }`}
+                          >
+                            <Icon name={item.isMemorized ? 'check-circle2' : 'circle'} size={20} />
+                          </button>
+                          <h3 className={`text-xl font-semibold ${
+                            item.isMemorized ? 'text-gray-500 line-through' : 'text-gray-900'
+                          }`}>
+                            {item.title}
+                          </h3>
+                        </div>
+                        <div className={`text-gray-700 mb-4 ${
+                          item.isMemorized ? 'line-through' : ''
+                        }`} dangerouslySetInnerHTML={{ __html: item.content }} />
+                        {item.images && item.images.length > 0 && (
+                          <div className="grid grid-cols-4 gap-2 mb-4">
+                            {item.images.map((image, index) => (
+                              <img
+                                key={index}
+                                src={image}
+                                alt={`图片 ${index + 1}`}
+                                className="w-full h-24 object-cover rounded-lg"
+                              />
+                            ))}
+                          </div>
+                        )}
+                        {item.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {item.tags.map((tag, index) => (
+                              <span
+                                key={index}
+                                onClick={() => setFilterTag(tag)}
+                                className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm cursor-pointer hover:bg-purple-200 transition-colors"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center space-x-2 ml-4">
+                        <button
+                          onClick={() => handleStartTest(item)}
+                          className="p-2 text-gray-500 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
+                          title="测试记忆"
+                        >
+                          <Icon name="check-circle2" size={20} />
+                        </button>
+                        <button
+                          onClick={() => handleEdit(item)}
+                          className="p-2 text-gray-500 hover:text-purple-500 hover:bg-purple-50 rounded-lg transition-colors"
+                        >
+                          <Icon name="edit" size={20} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(item.id)}
+                          className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          <Icon name="trash2" size={20} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {filteredAndSortedItems.map((item) => (
+                  <div key={item.id} className={`bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 hover:border-purple-200 ${item.isMemorized ? 'border-l-4 border-purple-500' : ''}`}>
+                    <div className="flex items-start space-x-4">
+                      <button
+                        onClick={() => toggleMemorizeStatus(item.id)}
+                        className={`p-2 rounded-full transition-colors flex-shrink-0 ${
+                          item.isMemorized
+                            ? 'bg-green-100 text-green-500'
+                            : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+                        }`}
+                      >
+                        <Icon name={item.isMemorized ? 'check-circle2' : 'circle'} size={20} />
+                      </button>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className={`text-lg font-semibold ${
+                            item.isMemorized ? 'text-gray-500 line-through' : 'text-gray-900'
+                          }`}>
+                            {item.title}
+                          </h3>
+                          <span className="text-xs text-gray-500">
+                            {new Date(item.updatedAt).toLocaleDateString('zh-CN')}
+                          </span>
+                        </div>
+                        <div className={`text-gray-700 text-sm mb-3 ${
+                          item.isMemorized ? 'line-through' : ''
+                        }`} dangerouslySetInnerHTML={{ __html: item.content.substring(0, 150) + '...' }} />
+                        <div className="flex flex-wrap items-center gap-2">
+                          {item.images && item.images.length > 0 && (
+                            <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-xs">
+                              {item.images.length} 张图片
+                            </span>
+                          )}
+                          {item.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-2">
+                              {item.tags.map((tag, index) => (
+                                <span
+                                  key={index}
+                                  onClick={() => setFilterTag(tag)}
+                                  className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm cursor-pointer hover:bg-purple-200 transition-colors"
+                                >
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-center space-y-2 ml-4 pt-2">
+                        <button
+                          onClick={() => handleStartTest(item)}
+                          className="p-2 text-gray-500 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
+                          title="测试记忆"
+                        >
+                          <Icon name="check-circle2" size={18} />
+                        </button>
+                        <button
+                          onClick={() => handleEdit(item)}
+                          className="p-2 text-gray-500 hover:text-purple-500 hover:bg-purple-50 rounded-lg transition-colors"
+                        >
+                          <Icon name="edit" size={18} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(item.id)}
+                          className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          <Icon name="trash2" size={18} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </>
         )}
 
@@ -343,7 +543,7 @@ export function Memorize() {
                     onClick={() => {
                       setIsModalOpen(false);
                       setEditingId(null);
-                      setFormData({ title: '', content: '', tags: '' });
+                      setFormData({ title: '', content: '', tags: '', images: [] });
                     }}
                     className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                   >
@@ -441,10 +641,10 @@ export function Memorize() {
                     <button
                       type="button"
                       onClick={() => {
-                        setIsModalOpen(false);
-                        setEditingId(null);
-                        setFormData({ title: '', content: '', tags: '' });
-                      }}
+                      setIsModalOpen(false);
+                      setEditingId(null);
+                      setFormData({ title: '', content: '', tags: '', images: [] });
+                    }}
                       className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
                     >
                       取消

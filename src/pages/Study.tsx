@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icons';
 import { useAppStore } from '../store';
@@ -29,6 +29,11 @@ export function Study() {
   });
   const [selectedActivities, setSelectedActivities] = useState<string[]>(['阅读', '笔记']);
   const [customActivity, setCustomActivity] = useState('');
+  const [timeRange, setTimeRange] = useState<'day' | 'week' | 'custom'>('week');
+  const [customDateRange, setCustomDateRange] = useState({
+    start: '',
+    end: ''
+  });
 
   if (!currentSubject) {
     navigate('/');
@@ -36,12 +41,38 @@ export function Study() {
   }
 
   const subjectStudyRecords = studyRecords.filter((record) => record.subjectId === currentSubject.id);
-  const totalStudyTime = subjectStudyRecords.reduce((sum, record) => sum + record.duration, 0);
-  const averageFocusLevel = subjectStudyRecords.length > 0 
-    ? subjectStudyRecords.reduce((sum, record) => {
+  
+  // 按时间范围筛选
+  const filteredRecords = subjectStudyRecords.filter((record) => {
+    const recordDate = new Date(record.startTime);
+    const now = new Date();
+    
+    if (timeRange === 'day') {
+      const dayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      return recordDate >= dayAgo;
+    }
+    if (timeRange === 'week') {
+      const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      return recordDate >= weekAgo;
+    }
+    if (timeRange === 'custom') {
+      if (!customDateRange.start || !customDateRange.end) {
+        return false;
+      }
+      const startDate = new Date(customDateRange.start);
+      const endDate = new Date(customDateRange.end);
+      endDate.setHours(23, 59, 59, 999);
+      return recordDate >= startDate && recordDate <= endDate;
+    }
+    return true;
+  });
+  
+  const totalStudyTime = filteredRecords.reduce((sum, record) => sum + record.duration, 0);
+  const averageFocusLevel = filteredRecords.length > 0 
+    ? filteredRecords.reduce((sum, record) => {
         const focusValue = record.focusLevel === 'low' ? 1 : record.focusLevel === 'medium' ? 2 : 3;
         return sum + focusValue;
-      }, 0) / subjectStudyRecords.length
+      }, 0) / filteredRecords.length
     : 0;
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -128,18 +159,50 @@ export function Study() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-emerald-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">学习记录</h1>
             <p className="text-gray-600 mt-1">记录和分析学习时间与专注度</p>
           </div>
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 rounded-xl font-medium transition-colors flex items-center space-x-2"
-          >
-            <Icon name="plus" size={20} />
-            <span>添加学习记录</span>
-          </button>
+          <div className="flex flex-col md:flex-row items-center space-x-2 gap-2">
+            {(['day', 'week', 'custom'] as const).map((range) => (
+              <button
+                key={range}
+                onClick={() => setTimeRange(range)}
+                className={`px-4 py-2 rounded-xl font-medium transition-colors ${
+                  timeRange === range
+                    ? 'bg-emerald-500 text-white'
+                    : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                {range === 'day' ? '今天' : range === 'week' ? '本周' : '自定义'}
+              </button>
+            ))}
+            {timeRange === 'custom' && (
+              <div className="flex items-center space-x-2 bg-white border border-gray-300 rounded-xl p-2">
+                <input
+                  type="date"
+                  value={customDateRange.start}
+                  onChange={(e) => setCustomDateRange({ ...customDateRange, start: e.target.value })}
+                  className="px-2 py-1 border border-gray-300 rounded-lg text-sm"
+                />
+                <span className="text-gray-500">至</span>
+                <input
+                  type="date"
+                  value={customDateRange.end}
+                  onChange={(e) => setCustomDateRange({ ...customDateRange, end: e.target.value })}
+                  className="px-2 py-1 border border-gray-300 rounded-lg text-sm"
+                />
+              </div>
+            )}
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 rounded-xl font-medium transition-colors flex items-center space-x-2"
+            >
+              <Icon name="plus" size={20} />
+              <span>添加学习记录</span>
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -179,19 +242,19 @@ export function Study() {
           </div>
         </div>
 
-        {subjectStudyRecords.length === 0 ? (
+        {filteredRecords.length === 0 ? (
           <div className="text-center py-16 bg-white rounded-2xl shadow-lg">
             <div className="w-24 h-24 bg-emerald-100 rounded-full mx-auto flex items-center justify-center mb-6">
               <Icon name="clock" size={48} className="text-emerald-500" />
             </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">还没有学习记录</h3>
-            <p className="text-gray-600 mb-6">点击上方按钮添加第一条学习记录</p>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">该时间段内没有学习记录</h3>
+            <p className="text-gray-600 mb-6">点击上方按钮添加学习记录</p>
           </div>
         ) : (
           <div className="bg-white rounded-2xl p-6 shadow-lg">
             <h2 className="text-xl font-bold text-gray-900 mb-6">学习记录列表</h2>
             <div className="space-y-4">
-              {subjectStudyRecords.map((record) => (
+              {filteredRecords.map((record) => (
                 <div key={record.id} className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">

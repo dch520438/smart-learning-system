@@ -259,6 +259,7 @@ export function Patterns() {
                         knowledgePoints: '',
                         type: 'single',
                         source: '',
+                        images: [],
                       });
                     }}
                     className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -412,18 +413,19 @@ export function Patterns() {
                     <button
                       type="button"
                       onClick={() => {
-                        setIsModalOpen(false);
-                        setEditingId(null);
-                        setFormData({
-                          content: '',
-                          answer: '',
-                          analysis: '',
-                          difficulty: 'medium',
-                          knowledgePoints: '',
-                          type: 'single',
-                          source: '',
-                        });
-                      }}
+                      setIsModalOpen(false);
+                      setEditingId(null);
+                      setFormData({
+                        content: '',
+                        answer: '',
+                        analysis: '',
+                        difficulty: 'medium',
+                        knowledgePoints: '',
+                        type: 'single',
+                        source: '',
+                        images: [],
+                      });
+                    }}
                       className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
                     >
                       取消

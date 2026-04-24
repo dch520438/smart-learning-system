@@ -17,6 +17,7 @@ import { Study } from "./pages/Study";
 import { Papers } from "./pages/Papers";
 import { Scraper } from "./pages/Scraper";
 import { Settings } from "./pages/Settings";
+import { SearchPage } from "./pages/SearchPage";
 import { Placeholder } from "./pages/Placeholder";
 
 export default function App() {
@@ -42,6 +43,7 @@ export default function App() {
           <Route path="/mindmap" element={<Mindmap />} />
           <Route path="/scraper" element={<Scraper />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/search" element={<SearchPage />} />
         </Routes>
       </div>
     </Router>

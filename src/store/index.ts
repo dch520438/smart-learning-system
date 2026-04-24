@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Subject, KnowledgePoint, Note, Question, TestRecord, StudyAnalysis, MemorizeItem, StudyRecord, Paper } from '../types';
+import type { Level, Subject, KnowledgePoint, Note, Question, TestRecord, StudyAnalysis, MemorizeItem, StudyRecord, Paper } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 
 interface AppState {
@@ -210,7 +210,7 @@ export const useAppStore = create<AppState>()(
         studyAnalyses: [...state.studyAnalyses, {
           ...analysis,
           id: uuidv4(),
-          createdAt: new Date().toISOString()
+          createdAt: new Date()
         }]
       })),
       

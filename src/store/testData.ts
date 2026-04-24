@@ -37,7 +37,8 @@ export function addTestData() {
     title: '数学考试重点',
     content: '<p>1. 分数的四则运算</p><p>2. 三角形的面积计算</p><p>3. 解方程</p>',
     tags: ['考试', '重点'],
-    images: []
+    images: [],
+    category: 'note'
   });
 
   // 添加测试题目

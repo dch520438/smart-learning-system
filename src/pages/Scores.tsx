@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icons';
 import { useAppStore } from '../store';
-import type { TestRecord } from '../types';
 import {
   LineChart,
   Line,
@@ -11,15 +10,17 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  BarChart,
-  Bar,
   Legend,
 } from 'recharts';
 
 export function Scores() {
   const navigate = useNavigate();
-  const { currentSubject, testRecords, subjects, addTestRecord } = useAppStore();
-  const [timeRange, setTimeRange] = useState<'week' | 'month' | 'all'>('all');
+  const { currentSubject, testRecords, addTestRecord } = useAppStore();
+  const [timeRange, setTimeRange] = useState<'week' | 'month' | 'all' | 'custom'>('all');
+  const [customDateRange, setCustomDateRange] = useState({
+    start: '',
+    end: ''
+  });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
@@ -62,6 +63,15 @@ export function Scores() {
       const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
       return recordDate >= monthAgo;
     }
+    if (timeRange === 'custom') {
+      if (!customDateRange.start || !customDateRange.end) {
+        return false;
+      }
+      const startDate = new Date(customDateRange.start);
+      const endDate = new Date(customDateRange.end);
+      endDate.setHours(23, 59, 59, 999);
+      return recordDate >= startDate && recordDate <= endDate;
+    }
     return true;
   });
 
@@ -73,11 +83,9 @@ export function Scores() {
   const averageAccuracy = totalTests > 0
     ? subjectTestRecords.reduce((sum, record) => sum + (record.score / record.totalScore) * 100, 0) / totalTests
     : 0;
-  const highestScore = totalTests > 0
-    ? Math.max(...subjectTestRecords.map((record) => record.score))
-    : 0;
 
-  const formatDate = (date: Date) => {
+
+  const formatDate = (date: Date | string) => {
     return new Date(date).toLocaleString('zh-CN', {
       year: 'numeric',
       month: '2-digit',
@@ -133,7 +141,7 @@ export function Scores() {
               <Icon name="plus" size={18} />
               <span>添加记录</span>
             </button>
-            {(['week', 'month', 'all'] as const).map((range) => (
+            {(['week', 'month', 'all', 'custom'] as const).map((range) => (
               <button
                 key={range}
                 onClick={() => setTimeRange(range)}
@@ -143,9 +151,26 @@ export function Scores() {
                     : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
                 }`}
               >
-                {range === 'week' ? '近一周' : range === 'month' ? '近一月' : '全部'}
+                {range === 'week' ? '近一周' : range === 'month' ? '近一月' : range === 'all' ? '全部' : '自定义'}
               </button>
             ))}
+            {timeRange === 'custom' && (
+              <div className="flex items-center space-x-2 bg-white border border-gray-300 rounded-xl p-2">
+                <input
+                  type="date"
+                  value={customDateRange.start}
+                  onChange={(e) => setCustomDateRange({ ...customDateRange, start: e.target.value })}
+                  className="px-2 py-1 border border-gray-300 rounded-lg text-sm"
+                />
+                <span className="text-gray-500">至</span>
+                <input
+                  type="date"
+                  value={customDateRange.end}
+                  onChange={(e) => setCustomDateRange({ ...customDateRange, end: e.target.value })}
+                  className="px-2 py-1 border border-gray-300 rounded-lg text-sm"
+                />
+              </div>
+            )}
           </div>
         </div>
 

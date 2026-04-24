@@ -71,74 +71,7 @@ export function Navbar() {
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
     setSearchQuery(query);
-    
-    if (query.trim() === '') {
-      setSearchResults([]);
-      setShowSearchResults(false);
-      return;
-    }
-
-    // 搜索所有相关内容
-    const results: any[] = [];
-
-    // 搜索知识点
-    knowledgePoints.forEach(kp => {
-      if (kp.title.toLowerCase().includes(query.toLowerCase()) || 
-          kp.content.toLowerCase().includes(query.toLowerCase())) {
-        results.push({
-          type: 'knowledge',
-          title: kp.title,
-          content: kp.content,
-          id: kp.id,
-          path: '/knowledge'
-        });
-      }
-    });
-
-    // 搜索笔记
-    notes.forEach(note => {
-      if (note.title.toLowerCase().includes(query.toLowerCase()) || 
-          note.content.toLowerCase().includes(query.toLowerCase())) {
-        results.push({
-          type: 'note',
-          title: note.title,
-          content: note.content,
-          id: note.id,
-          path: '/notes'
-        });
-      }
-    });
-
-    // 搜索题目
-    questions.forEach(question => {
-      if (question.content.toLowerCase().includes(query.toLowerCase()) || 
-          question.answer.toLowerCase().includes(query.toLowerCase())) {
-        results.push({
-          type: 'question',
-          title: question.content.substring(0, 50) + '...',
-          content: question.answer,
-          id: question.id,
-          path: question.isMistake ? '/mistakes' : (question.isPattern ? '/patterns' : '/practice')
-        });
-      }
-    });
-
-    // 搜索必背内容
-    memorizeItems.forEach(item => {
-      if (item.title.toLowerCase().includes(query.toLowerCase()) || 
-          item.content.toLowerCase().includes(query.toLowerCase())) {
-        results.push({
-          type: 'memorize',
-          title: item.title,
-          content: item.content,
-          id: item.id,
-          path: '/memorize'
-        });
-      }
-    });
-
-    setSearchResults(results.slice(0, 10)); // 只显示前10个结果
-    setShowSearchResults(true);
+    setShowSearchResults(false);
   };
 
   const handleSearchResultClick = (result: any) => {
@@ -164,7 +97,15 @@ export function Navbar() {
           </div>
 
           {/* 搜索框 */}
-          <div className="relative mb-4 md:mb-0 w-full md:w-64">
+          <form 
+            className="relative mb-4 md:mb-0 w-full md:w-64"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (searchQuery.trim()) {
+                navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
+              }
+            }}
+          >
             <input
               type="text"
               value={searchQuery}
@@ -172,28 +113,13 @@ export function Navbar() {
               placeholder="搜索知识点、笔记、题目..."
               className="w-full px-4 py-2 pr-10 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
-            <Icon name="search" size={18} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-            {showSearchResults && searchResults.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-lg border border-gray-200 max-h-80 overflow-y-auto z-50">
-                {searchResults.map((result) => (
-                  <div
-                    key={result.id}
-                    onClick={() => handleSearchResultClick(result)}
-                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                  >
-                    <div className="font-medium text-gray-900">{result.title}</div>
-                    <div className="text-sm text-gray-600 truncate">{result.content.substring(0, 100)}...</div>
-                    <div className="text-xs text-gray-500 mt-1">
-                      {result.type === 'knowledge' && '知识点'}
-                      {result.type === 'note' && '笔记'}
-                      {result.type === 'question' && '题目'}
-                      {result.type === 'memorize' && '必背内容'}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+            <button 
+              type="submit"
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-blue-500 transition-colors"
+            >
+              <Icon name="search" size={18} />
+            </button>
+          </form>
 
           {/* 年级选择 */}
           <div className="flex items-center space-x-2 mb-4 md:mb-0">
