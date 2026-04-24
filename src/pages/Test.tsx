@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icons';
 import { useAppStore } from '../store';
-import type { Question } from '../types';
+import type { Question, MemorizeItem } from '../types';
 
 const difficultyLabels: Record<string, string> = {
   easy: '简单',
@@ -18,20 +18,21 @@ const difficultyColors: Record<string, string> = {
 
 export function Test() {
   const navigate = useNavigate();
-  const { currentSubject, questions, addTestRecord } = useAppStore();
+  const { currentSubject, questions, memorizeItems, addTestRecord } = useAppStore();
   
   // 测试配置
   const [testConfig, setTestConfig] = useState({
     title: '',
     questionCount: 5,
     difficulty: 'all' as 'all' | 'easy' | 'medium' | 'hard',
+    includeMemorize: false,
   });
   
   // 测试状态
   const [isTestStarted, setIsTestStarted] = useState(false);
   const [isTestFinished, setIsTestFinished] = useState(false);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [selectedQuestions, setSelectedQuestions] = useState<Question[]>([]);
+  const [selectedQuestions, setSelectedQuestions] = useState<(Question | (MemorizeItem & { type: 'memorize' }))[]>([]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [score, setScore] = useState(0);
   const [totalScore, setTotalScore] = useState(0);
@@ -44,6 +45,7 @@ export function Test() {
   }
 
   const subjectQuestions = questions.filter((q) => q.subjectId === currentSubject.id);
+  const subjectMemorizeItems = memorizeItems.filter((item) => item.subjectId === currentSubject.id);
 
   useEffect(() => {
     if (isTestStarted && !isTestFinished) {
@@ -66,13 +68,26 @@ export function Test() {
       filteredQuestions = filteredQuestions.filter((q) => q.difficulty === testConfig.difficulty);
     }
 
-    if (filteredQuestions.length < testConfig.questionCount) {
-      alert(`题目数量不足，当前只有 ${filteredQuestions.length} 道题目`);
+    let totalItems = [...filteredQuestions];
+    
+    // 如果包含必背必记内容
+    if (testConfig.includeMemorize && subjectMemorizeItems.length > 0) {
+      // 将必背必记内容转换为测试项目
+      const memorizeTestItems = subjectMemorizeItems.map(item => ({
+        ...item,
+        type: 'memorize' as const,
+        answer: item.content, // 答案就是必背内容
+      }));
+      totalItems = [...totalItems, ...memorizeTestItems];
+    }
+
+    if (totalItems.length < testConfig.questionCount) {
+      alert(`题目数量不足，当前只有 ${totalItems.length} 道题目`);
       return;
     }
 
     // 随机选择题目
-    const shuffled = filteredQuestions.sort(() => 0.5 - Math.random());
+    const shuffled = totalItems.sort(() => 0.5 - Math.random());
     const selected = shuffled.slice(0, testConfig.questionCount);
     
     setSelectedQuestions(selected);
@@ -113,8 +128,32 @@ export function Test() {
     // 计算分数
     let correctCount = 0;
     selectedQuestions.forEach((question) => {
-      if (answers[question.id] === question.answer) {
-        correctCount++;
+      if ('type' in question && question.type === 'memorize') {
+        // 对于必背必记内容，使用相似度计算
+        const userAnswer = answers[question.id] || '';
+        const originalAnswer = question.answer || '';
+        
+        // 简单的相似度计算：计算匹配的字符数
+        const userChars = userAnswer.toLowerCase().replace(/\s/g, '');
+        const originalChars = originalAnswer.toLowerCase().replace(/\s/g, '');
+        
+        let matchCount = 0;
+        for (let i = 0; i < Math.min(userChars.length, originalChars.length); i++) {
+          if (userChars[i] === originalChars[i]) {
+            matchCount++;
+          }
+        }
+        
+        // 相似度达到80%以上认为正确
+        const similarity = originalChars.length > 0 ? matchCount / originalChars.length : 0;
+        if (similarity >= 0.8) {
+          correctCount++;
+        }
+      } else {
+        // 对于普通题目，完全匹配
+        if (answers[question.id] === question.answer) {
+          correctCount++;
+        }
       }
     });
 
@@ -201,6 +240,21 @@ export function Test() {
                   <option value="medium">中等</option>
                   <option value="hard">困难</option>
                 </select>
+              </div>
+
+              <div>
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={testConfig.includeMemorize}
+                    onChange={(e) => setTestConfig({ ...testConfig, includeMemorize: e.target.checked })}
+                    className="w-4 h-4 text-pink-500 rounded focus:ring-pink-500"
+                  />
+                  <span className="text-sm font-medium text-gray-700">包含必背必记内容</span>
+                </label>
+                {testConfig.includeMemorize && subjectMemorizeItems.length === 0 && (
+                  <p className="text-sm text-gray-500 mt-1">当前学科没有必背必记内容</p>
+                )}
               </div>
 
               <div className="pt-4">
@@ -295,54 +349,80 @@ export function Test() {
         </div>
 
         <div className="bg-white rounded-2xl p-6 shadow-lg mb-6">
-          <div className="mb-4">
-            <span
-              className="px-3 py-1 rounded-full text-sm font-medium"
-              style={{
-                backgroundColor: difficultyColors[currentQuestion.difficulty] + '20',
-                color: difficultyColors[currentQuestion.difficulty],
-              }}
-            >
-              {difficultyLabels[currentQuestion.difficulty]}
-            </span>
-          </div>
-          
-          <div className="text-gray-900 mb-6 whitespace-pre-wrap">{currentQuestion.content}</div>
-
-          <div className="space-y-3">
-            {['A', 'B', 'C', 'D'].map((option) => (
-              <div key={option}>
-                <input
-                  type="radio"
-                  id={`option-${option}`}
-                  name={`question-${currentQuestion.id}`}
-                  value={option}
-                  checked={answers[currentQuestion.id] === option}
-                  onChange={() => handleAnswerChange(currentQuestion.id, option)}
-                  className="hidden"
-                />
-                <label
-                  htmlFor={`option-${option}`}
-                  className={`block px-4 py-3 border rounded-xl cursor-pointer transition-colors ${
-                    answers[currentQuestion.id] === option
-                      ? 'border-pink-500 bg-pink-50'
-                      : 'border-gray-300 hover:border-pink-300'
-                  }`}
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
-                      answers[currentQuestion.id] === option
-                        ? 'bg-pink-500 text-white'
-                        : 'border border-gray-300'
-                    }`}>
-                      {answers[currentQuestion.id] === option && <Icon name="check" size={14} />}
-                    </div>
-                    <span className="text-gray-800">{option}. 选项 {option}</span>
-                  </div>
-                </label>
+          {('type' in currentQuestion && currentQuestion.type === 'memorize') ? (
+            <>
+              <div className="mb-4">
+                <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">
+                  必背必记
+                </span>
               </div>
-            ))}
-          </div>
+              
+              <div className="text-gray-900 mb-6">
+                <p className="mb-4">请默写以下内容：</p>
+                <h3 className="text-xl font-semibold mb-4">{currentQuestion.title}</h3>
+              </div>
+
+              <div className="space-y-3">
+                <textarea
+                  value={answers[currentQuestion.id] || ''}
+                  onChange={(e) => handleAnswerChange(currentQuestion.id, e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent min-h-[200px]"
+                  placeholder="请在此处输入答案"
+                />
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="mb-4">
+                <span
+                  className="px-3 py-1 rounded-full text-sm font-medium"
+                  style={{
+                    backgroundColor: difficultyColors[(currentQuestion as Question).difficulty] + '20',
+                    color: difficultyColors[(currentQuestion as Question).difficulty],
+                  }}
+                >
+                  {difficultyLabels[(currentQuestion as Question).difficulty]}
+                </span>
+              </div>
+              
+              <div className="text-gray-900 mb-6" dangerouslySetInnerHTML={{ __html: currentQuestion.content }} />
+
+              <div className="space-y-3">
+                {['A', 'B', 'C', 'D'].map((option) => (
+                  <div key={option}>
+                    <input
+                      type="radio"
+                      id={`option-${option}`}
+                      name={`question-${currentQuestion.id}`}
+                      value={option}
+                      checked={answers[currentQuestion.id] === option}
+                      onChange={() => handleAnswerChange(currentQuestion.id, option)}
+                      className="hidden"
+                    />
+                    <label
+                      htmlFor={`option-${option}`}
+                      className={`block px-4 py-3 border rounded-xl cursor-pointer transition-colors ${
+                        answers[currentQuestion.id] === option
+                          ? 'border-pink-500 bg-pink-50'
+                          : 'border-gray-300 hover:border-pink-300'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                          answers[currentQuestion.id] === option
+                            ? 'bg-pink-500 text-white'
+                            : 'border border-gray-300'
+                        }`}>
+                          {answers[currentQuestion.id] === option && <Icon name="check" size={14} />}
+                        </div>
+                        <span className="text-gray-800">{option}. 选项 {option}</span>
+                      </div>
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </div>
 
         <div className="flex items-center justify-between">

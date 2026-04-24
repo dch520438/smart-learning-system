@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Subject, KnowledgePoint, Question, Note, TestRecord, StudyAnalysis, Level, MemorizeItem } from '../types';
+import type { Subject, KnowledgePoint, Note, Question, TestRecord, StudyAnalysis, MemorizeItem, StudyRecord, Paper } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 
 interface AppState {
@@ -14,6 +14,7 @@ interface AppState {
   questions: Question[];
   notes: Note[];
   testRecords: TestRecord[];
+  studyRecords: StudyRecord[];
   studyAnalyses: StudyAnalysis[];
   memorizeItems: MemorizeItem[];
   
@@ -28,6 +29,13 @@ interface AppState {
   updateNote: (id: string, note: Partial<Note>) => void;
   deleteNote: (id: string) => void;
   addTestRecord: (record: Omit<TestRecord, 'id' | 'createdAt'>) => void;
+  addStudyRecord: (record: Omit<StudyRecord, 'id' | 'createdAt'>) => void;
+  updateStudyRecord: (id: string, record: Partial<StudyRecord>) => void;
+  deleteStudyRecord: (id: string) => void;
+  papers: Paper[];
+  addPaper: (paper: Omit<Paper, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  updatePaper: (id: string, paper: Partial<Paper>) => void;
+  deletePaper: (id: string) => void;
   addStudyAnalysis: (analysis: Omit<StudyAnalysis, 'id' | 'createdAt'>) => void;
   addMemorizeItem: (item: Omit<MemorizeItem, 'id' | 'createdAt' | 'updatedAt' | 'isMemorized'>) => void;
   updateMemorizeItem: (id: string, item: Partial<MemorizeItem>) => void;
@@ -74,12 +82,14 @@ export const useAppStore = create<AppState>()(
       setCurrentSubject: (subject) => set({ currentSubject: subject }),
       
       subjects: initialSubjects,
-      knowledgePoints: [],
-      questions: [],
-      notes: [],
-      testRecords: [],
-      studyAnalyses: [],
-      memorizeItems: [],
+    knowledgePoints: [],
+    questions: [],
+    notes: [],
+    testRecords: [],
+    studyRecords: [],
+    papers: [],
+    studyAnalyses: [],
+    memorizeItems: [],
       
       addSubject: (subject) => set((state) => ({
         subjects: [...state.subjects, { ...subject, id: uuidv4() }]
@@ -146,15 +156,52 @@ export const useAppStore = create<AppState>()(
         testRecords: [...state.testRecords, {
           ...record,
           id: uuidv4(),
-          createdAt: new Date()
+          createdAt: new Date().toISOString()
         }]
+      })),
+      
+      addStudyRecord: (record) => set((state) => ({
+        studyRecords: [...state.studyRecords, {
+          ...record,
+          id: uuidv4(),
+          createdAt: new Date().toISOString()
+        }]
+      })),
+      
+      updateStudyRecord: (id, record) => set((state) => ({
+        studyRecords: state.studyRecords.map(item =>
+          item.id === id ? { ...item, ...record } : item
+        )
+      })),
+      
+      deleteStudyRecord: (id) => set((state) => ({
+        studyRecords: state.studyRecords.filter(item => item.id !== id)
+      })),
+      
+      addPaper: (paper) => set((state) => ({
+        papers: [...state.papers, {
+          ...paper,
+          id: uuidv4(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        }]
+      })),
+      
+      updatePaper: (id, paper) => set((state) => ({
+        papers: state.papers.map(item =>
+          item.id === id ? { ...item, ...paper, updatedAt: new Date().toISOString() } : item
+        )
+      })),
+      
+      deletePaper: (id) => set((state) => ({
+        papers: state.papers.filter(item => item.id !== id)
       })),
       
       addStudyAnalysis: (analysis) => set((state) => ({
         studyAnalyses: [...state.studyAnalyses, {
           ...analysis,
           id: uuidv4(),
-          createdAt: new Date()
+          createdAt: new Date().toISOString()
         }]
       })),
       

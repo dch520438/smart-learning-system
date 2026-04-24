@@ -13,6 +13,9 @@ import { Practice } from "./pages/Practice";
 import { Scores } from "./pages/Scores";
 import { Analysis } from "./pages/Analysis";
 import { Mindmap } from "./pages/Mindmap";
+import { Study } from "./pages/Study";
+import { Papers } from "./pages/Papers";
+import { Scraper } from "./pages/Scraper";
 import { Placeholder } from "./pages/Placeholder";
 
 export default function App() {
@@ -32,8 +35,11 @@ export default function App() {
           <Route path="/test" element={<Test />} />
           <Route path="/practice" element={<Practice />} />
           <Route path="/scores" element={<Scores />} />
+          <Route path="/study" element={<Study />} />
+          <Route path="/papers" element={<Papers />} />
           <Route path="/analysis" element={<Analysis />} />
           <Route path="/mindmap" element={<Mindmap />} />
+          <Route path="/scraper" element={<Scraper />} />
         </Routes>
       </div>
     </Router>

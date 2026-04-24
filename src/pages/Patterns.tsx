@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icons';
 import { useAppStore } from '../store';
 import type { Question } from '../types';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 
 const difficultyLabels: Record<string, string> = {
   easy: '简单',
@@ -29,6 +31,7 @@ export function Patterns() {
     knowledgePoints: '',
     type: 'single' as const,
     source: '',
+    images: [] as string[],
   });
 
   if (!currentSubject) {
@@ -51,6 +54,7 @@ export function Patterns() {
         knowledgePoints: kpArray,
         type: formData.type,
         source: formData.source,
+        images: formData.images,
       });
     } else {
       addQuestion({
@@ -61,7 +65,7 @@ export function Patterns() {
         difficulty: formData.difficulty,
         knowledgePoints: kpArray,
         type: formData.type,
-        images: [],
+        images: formData.images,
         source: formData.source,
         isMistake: false,
         isPattern: true,
@@ -78,6 +82,7 @@ export function Patterns() {
       knowledgePoints: '',
       type: 'single',
       source: '',
+      images: [],
     });
   };
 
@@ -91,6 +96,7 @@ export function Patterns() {
       knowledgePoints: question.knowledgePoints.join(', '),
       type: question.type as 'single',
       source: question.source,
+      images: question.images || [],
     });
     setIsModalOpen(true);
   };
@@ -103,6 +109,30 @@ export function Patterns() {
 
   const togglePattern = (question: Question) => {
     updateQuestion(question.id, { isPattern: !question.isPattern });
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      // 这里使用 base64 编码来处理图片，实际项目中可能需要上传到服务器
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          setFormData({
+            ...formData,
+            images: [...formData.images, event.target.result as string],
+          });
+        }
+      };
+      reader.readAsDataURL(files[0]);
+    }
+  };
+
+  const handleRemoveImage = (index: number) => {
+    setFormData({
+      ...formData,
+      images: formData.images.filter((_, i) => i !== index),
+    });
   };
 
   return (
@@ -156,17 +186,29 @@ export function Patterns() {
                           </span>
                         ))}
                     </div>
-                    <div className="text-gray-900 mb-4 whitespace-pre-wrap">{question.content}</div>
+                    <div className="text-gray-900 mb-4" dangerouslySetInnerHTML={{ __html: question.content }} />
+                    {question.images && question.images.length > 0 && (
+                      <div className="grid grid-cols-4 gap-2 mb-4">
+                        {question.images.map((image, index) => (
+                          <img
+                            key={index}
+                            src={image}
+                            alt={`图片 ${index + 1}`}
+                            className="w-full h-24 object-cover rounded-lg"
+                          />
+                        ))}
+                      </div>
+                    )}
                     {question.answer && (
                       <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-4">
                         <h4 className="font-semibold text-green-800 mb-2">答案</h4>
-                        <p className="text-green-700 whitespace-pre-wrap">{question.answer}</p>
+                        <div className="text-green-700" dangerouslySetInnerHTML={{ __html: question.answer }} />
                       </div>
                     )}
                     {question.analysis && (
                       <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
                         <h4 className="font-semibold text-blue-800 mb-2">解析</h4>
-                        <p className="text-blue-700 whitespace-pre-wrap">{question.analysis}</p>
+                        <div className="text-blue-700" dangerouslySetInnerHTML={{ __html: question.analysis }} />
                       </div>
                     )}
                   </div>
@@ -228,33 +270,106 @@ export function Patterns() {
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">题目内容</label>
-                    <textarea
-                      value={formData.content}
-                      onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent min-h-[150px]"
-                      placeholder="输入题目内容"
-                      required
-                    />
+                    <div className="border border-gray-300 rounded-xl overflow-hidden">
+                      <ReactQuill
+                        value={formData.content}
+                        onChange={(content) => setFormData({ ...formData, content })}
+                        placeholder="输入题目内容"
+                        modules={{
+                          toolbar: [
+                            ['bold', 'italic', 'underline', 'strike'],
+                            ['blockquote', 'code-block'],
+                            [{ 'header': 1 }, { 'header': 2 }],
+                            [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                            [{ 'script': 'sub' }, { 'script': 'super' }],
+                            [{ 'indent': '-1' }, { 'indent': '+1' }],
+                            [{ 'direction': 'rtl' }],
+                            [{ 'size': ['small', false, 'large', 'huge'] }],
+                            [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                            [{ 'color': [] }, { 'background': [] }],
+                            [{ 'font': [] }],
+                            [{ 'align': [] }],
+                            ['clean'],
+                            ['link', 'image', 'video']
+                          ]
+                        }}
+                        className="min-h-[150px]"
+                      />
+                    </div>
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">答案</label>
-                    <textarea
-                      value={formData.answer}
-                      onChange={(e) => setFormData({ ...formData, answer: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent min-h-[100px]"
-                      placeholder="输入答案"
-                    />
+                    <div className="border border-gray-300 rounded-xl overflow-hidden">
+                      <ReactQuill
+                        value={formData.answer}
+                        onChange={(answer) => setFormData({ ...formData, answer })}
+                        placeholder="输入答案"
+                        modules={{
+                          toolbar: [
+                            ['bold', 'italic', 'underline', 'strike'],
+                            ['blockquote', 'code-block'],
+                            [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                            ['clean'],
+                            ['link', 'image']
+                          ]
+                        }}
+                        className="min-h-[100px]"
+                      />
+                    </div>
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">解析</label>
-                    <textarea
-                      value={formData.analysis}
-                      onChange={(e) => setFormData({ ...formData, analysis: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent min-h-[100px]"
-                      placeholder="输入题目解析"
-                    />
+                    <div className="border border-gray-300 rounded-xl overflow-hidden">
+                      <ReactQuill
+                        value={formData.analysis}
+                        onChange={(analysis) => setFormData({ ...formData, analysis })}
+                        placeholder="输入题目解析"
+                        modules={{
+                          toolbar: [
+                            ['bold', 'italic', 'underline', 'strike'],
+                            ['blockquote', 'code-block'],
+                            [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                            ['clean'],
+                            ['link', 'image']
+                          ]
+                        }}
+                        className="min-h-[100px]"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">图片</label>
+                    <div className="flex items-center space-x-4">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        className="px-4 py-2 border border-gray-300 rounded-xl"
+                      />
+                      <span className="text-sm text-gray-500">支持 JPG、PNG、GIF 等格式</span>
+                    </div>
+                    {formData.images.length > 0 && (
+                      <div className="mt-4 grid grid-cols-4 gap-2">
+                        {formData.images.map((image, index) => (
+                          <div key={index} className="relative">
+                            <img
+                              src={image}
+                              alt={`上传图片 ${index + 1}`}
+                              className="w-full h-20 object-cover rounded-lg"
+                            />
+                            <button
+                              onClick={() => handleRemoveImage(index)}
+                              className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"
+                            >
+                              <Icon name="x" size={14} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">

@@ -18,8 +18,16 @@ import {
 
 export function Scores() {
   const navigate = useNavigate();
-  const { currentSubject, testRecords, subjects } = useAppStore();
+  const { currentSubject, testRecords, subjects, addTestRecord } = useAppStore();
   const [timeRange, setTimeRange] = useState<'week' | 'month' | 'all'>('all');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    title: '',
+    score: 0,
+    totalScore: 100,
+    date: new Date().toISOString().split('T')[0],
+    timeSpent: 600, // 10分钟
+  });
 
   if (!currentSubject) {
     navigate('/');
@@ -85,6 +93,30 @@ export function Scores() {
     return `${minutes}分${remainingSeconds}秒`;
   };
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // 创建一个测试记录
+    addTestRecord({
+      subjectId: currentSubject.id,
+      title: formData.title,
+      score: formData.score,
+      totalScore: formData.totalScore,
+      questions: [], // 手动添加的记录没有具体题目
+      answers: {}, // 手动添加的记录没有具体答案
+      timeSpent: formData.timeSpent,
+    });
+    
+    setIsModalOpen(false);
+    setFormData({
+      title: '',
+      score: 0,
+      totalScore: 100,
+      date: new Date().toISOString().split('T')[0],
+      timeSpent: 600,
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-indigo-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -94,6 +126,13 @@ export function Scores() {
             <p className="text-gray-600 mt-1">查看成绩变化和趋势</p>
           </div>
           <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-xl font-medium transition-colors flex items-center space-x-2"
+            >
+              <Icon name="plus" size={18} />
+              <span>添加记录</span>
+            </button>
             {(['week', 'month', 'all'] as const).map((range) => (
               <button
                 key={range}
@@ -223,6 +262,103 @@ export function Scores() {
             </div>
           )}
         </div>
+
+        {isModalOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl max-w-md w-full">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900">添加分数记录</h2>
+                  <button
+                    onClick={() => setIsModalOpen(false)}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <Icon name="x" size={24} />
+                  </button>
+                </div>
+
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">测试标题</label>
+                    <input
+                      type="text"
+                      value={formData.title}
+                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      placeholder="输入测试标题（如：单元测试、月考等）"
+                      required
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">得分</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={formData.score}
+                        onChange={(e) => setFormData({ ...formData, score: parseInt(e.target.value) || 0 })}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">总分</label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={formData.totalScore}
+                        onChange={(e) => setFormData({ ...formData, totalScore: parseInt(e.target.value) || 1 })}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">日期</label>
+                    <input
+                      type="date"
+                      value={formData.date}
+                      onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">用时（分钟）</label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={Math.floor(formData.timeSpent / 60)}
+                      onChange={(e) => setFormData({ ...formData, timeSpent: parseInt(e.target.value) * 60 || 60 })}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      required
+                    />
+                  </div>
+
+                  <div className="flex space-x-4 pt-4">
+                    <button
+                      type="button"
+                      onClick={() => setIsModalOpen(false)}
+                      className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
+                    >
+                      取消
+                    </button>
+                    <button
+                      type="submit"
+                      className="flex-1 px-6 py-3 bg-indigo-500 text-white rounded-xl font-medium hover:bg-indigo-600 transition-colors flex items-center justify-center space-x-2"
+                    >
+                      <Icon name="save" size={20} />
+                      <span>保存</span>
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

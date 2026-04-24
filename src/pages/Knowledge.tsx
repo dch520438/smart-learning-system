@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icons';
 import { useAppStore } from '../store';
 import type { KnowledgePoint } from '../types';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 
 export function Knowledge() {
   const navigate = useNavigate();
@@ -13,6 +15,7 @@ export function Knowledge() {
     title: '',
     content: '',
     tags: '',
+    images: [] as string[],
   });
 
   if (!currentSubject) {
@@ -31,6 +34,7 @@ export function Knowledge() {
         title: formData.title,
         content: formData.content,
         tags: tagsArray,
+        images: formData.images,
       });
     } else {
       addKnowledgePoint({
@@ -38,13 +42,13 @@ export function Knowledge() {
         title: formData.title,
         content: formData.content,
         tags: tagsArray,
-        images: [],
+        images: formData.images,
       });
     }
 
     setIsModalOpen(false);
     setEditingId(null);
-    setFormData({ title: '', content: '', tags: '' });
+    setFormData({ title: '', content: '', tags: '', images: [] });
   };
 
   const handleEdit = (kp: KnowledgePoint) => {
@@ -53,6 +57,7 @@ export function Knowledge() {
       title: kp.title,
       content: kp.content,
       tags: kp.tags.join(', '),
+      images: kp.images || [],
     });
     setIsModalOpen(true);
   };
@@ -61,6 +66,30 @@ export function Knowledge() {
     if (confirm('确定要删除这个知识点吗？')) {
       deleteKnowledgePoint(id);
     }
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      // 这里使用 base64 编码来处理图片，实际项目中可能需要上传到服务器
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          setFormData({
+            ...formData,
+            images: [...formData.images, event.target.result as string],
+          });
+        }
+      };
+      reader.readAsDataURL(files[0]);
+    }
+  };
+
+  const handleRemoveImage = (index: number) => {
+    setFormData({
+      ...formData,
+      images: formData.images.filter((_, i) => i !== index),
+    });
   };
 
   return (
@@ -95,7 +124,19 @@ export function Knowledge() {
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <h3 className="text-xl font-semibold text-gray-900 mb-2">{kp.title}</h3>
-                    <p className="text-gray-700 whitespace-pre-wrap mb-4">{kp.content}</p>
+                    <div className="text-gray-700 mb-4" dangerouslySetInnerHTML={{ __html: kp.content }} />
+                    {kp.images && kp.images.length > 0 && (
+                      <div className="grid grid-cols-4 gap-2 mb-4">
+                        {kp.images.map((image, index) => (
+                          <img
+                            key={index}
+                            src={image}
+                            alt={`图片 ${index + 1}`}
+                            className="w-full h-24 object-cover rounded-lg"
+                          />
+                        ))}
+                      </div>
+                    )}
                     {kp.tags.length > 0 && (
                       <div className="flex flex-wrap gap-2">
                         {kp.tags.map((tag, index) => (
@@ -164,13 +205,64 @@ export function Knowledge() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">内容</label>
-                    <textarea
-                      value={formData.content}
-                      onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[200px]"
-                      placeholder="输入知识点内容"
-                      required
-                    />
+                    <div className="border border-gray-300 rounded-xl overflow-hidden">
+                      <ReactQuill
+                        value={formData.content}
+                        onChange={(content) => setFormData({ ...formData, content })}
+                        placeholder="输入知识点内容"
+                        modules={{
+                          toolbar: [
+                            ['bold', 'italic', 'underline', 'strike'],
+                            ['blockquote', 'code-block'],
+                            [{ 'header': 1 }, { 'header': 2 }],
+                            [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                            [{ 'script': 'sub' }, { 'script': 'super' }],
+                            [{ 'indent': '-1' }, { 'indent': '+1' }],
+                            [{ 'direction': 'rtl' }],
+                            [{ 'size': ['small', false, 'large', 'huge'] }],
+                            [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                            [{ 'color': [] }, { 'background': [] }],
+                            [{ 'font': [] }],
+                            [{ 'align': [] }],
+                            ['clean'],
+                            ['link', 'image', 'video']
+                          ]
+                        }}
+                        className="min-h-[200px]"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">图片</label>
+                    <div className="flex items-center space-x-4">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        className="px-4 py-2 border border-gray-300 rounded-xl"
+                      />
+                      <span className="text-sm text-gray-500">支持 JPG、PNG、GIF 等格式</span>
+                    </div>
+                    {formData.images.length > 0 && (
+                      <div className="mt-4 grid grid-cols-4 gap-2">
+                        {formData.images.map((image, index) => (
+                          <div key={index} className="relative">
+                            <img
+                              src={image}
+                              alt={`上传图片 ${index + 1}`}
+                              className="w-full h-20 object-cover rounded-lg"
+                            />
+                            <button
+                              onClick={() => handleRemoveImage(index)}
+                              className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"
+                            >
+                              <Icon name="x" size={14} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   <div>

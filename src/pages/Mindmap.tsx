@@ -1,10 +1,18 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icons';
 import { useAppStore } from '../store';
 
 export function Mindmap() {
   const navigate = useNavigate();
-  const { currentSubject, knowledgePoints, questions } = useAppStore();
+  const { currentSubject, knowledgePoints, questions, addKnowledgePoint, updateKnowledgePoint, deleteKnowledgePoint } = useAppStore();
+  const [isEditing, setIsEditing] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    title: '',
+    content: '',
+    tags: '',
+  });
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   if (!currentSubject) {
     navigate('/');
@@ -13,6 +21,49 @@ export function Mindmap() {
 
   const subjectKnowledgePoints = knowledgePoints.filter((kp) => kp.subjectId === currentSubject.id);
   const subjectQuestions = questions.filter((q) => q.subjectId === currentSubject.id);
+
+  const handleAddKnowledgePoint = () => {
+    const tagsArray = editFormData.tags.split(',').map((t) => t.trim()).filter(Boolean);
+    addKnowledgePoint({
+      subjectId: currentSubject.id,
+      title: editFormData.title,
+      content: editFormData.content,
+      tags: tagsArray,
+      images: [],
+    });
+    setIsEditing(false);
+    setEditFormData({ title: '', content: '', tags: '' });
+  };
+
+  const handleUpdateKnowledgePoint = () => {
+    if (editingId) {
+      const tagsArray = editFormData.tags.split(',').map((t) => t.trim()).filter(Boolean);
+      updateKnowledgePoint(editingId, {
+        title: editFormData.title,
+        content: editFormData.content,
+        tags: tagsArray,
+      });
+      setIsEditing(false);
+      setEditingId(null);
+      setEditFormData({ title: '', content: '', tags: '' });
+    }
+  };
+
+  const handleEditKnowledgePoint = (kp: any) => {
+    setEditingId(kp.id);
+    setEditFormData({
+      title: kp.title,
+      content: kp.content || '',
+      tags: kp.tags.join(', '),
+    });
+    setIsEditing(true);
+  };
+
+  const handleDeleteKnowledgePoint = (id: string) => {
+    if (confirm('确定要删除这个知识点吗？')) {
+      deleteKnowledgePoint(id);
+    }
+  };
 
   // 构建思维导图数据结构
   const buildMindmapData = () => {
@@ -136,32 +187,107 @@ export function Mindmap() {
             <h1 className="text-3xl font-bold text-gray-900">思维导图</h1>
             <p className="text-gray-600 mt-1">知识可视化和结构梳理</p>
           </div>
+          <button
+            onClick={() => {
+              setEditingId(null);
+              setEditFormData({ title: '', content: '', tags: '' });
+              setIsEditing(true);
+            }}
+            className="bg-sky-500 hover:bg-sky-600 text-white px-6 py-3 rounded-xl font-medium transition-colors flex items-center space-x-2"
+          >
+            <Icon name="plus" size={20} />
+            <span>添加知识点</span>
+          </button>
         </div>
 
-        <div className="bg-white rounded-2xl p-6 shadow-lg">
-          <h2 className="text-xl font-bold text-gray-900 mb-6">{currentSubject.name} 知识结构</h2>
-          
-          {subjectKnowledgePoints.length === 0 ? (
-            <div className="text-center py-16">
-              <div className="w-24 h-24 bg-sky-100 rounded-full mx-auto flex items-center justify-center mb-6">
-                <Icon name="network" size={48} className="text-sky-500" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">还没有知识点数据</h3>
-              <p className="text-gray-600 mb-6">添加知识点后，这里会生成思维导图</p>
+        {isEditing ? (
+          <div className="bg-white rounded-2xl p-6 shadow-lg mb-8">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-gray-900">
+                {editingId ? '编辑知识点' : '添加知识点'}
+              </h2>
               <button
-                onClick={() => navigate('/knowledge')}
-                className="bg-sky-500 hover:bg-sky-600 text-white px-6 py-3 rounded-xl font-medium transition-colors flex items-center justify-center space-x-2 mx-auto"
+                onClick={() => {
+                  setIsEditing(false);
+                  setEditingId(null);
+                  setEditFormData({ title: '', content: '', tags: '' });
+                }}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                <Icon name="plus" size={20} />
-                <span>添加知识点</span>
+                <Icon name="x" size={24} />
               </button>
             </div>
-          ) : (
-            <div className="overflow-x-auto">
-              {renderMindmap()}
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">知识点标题</label>
+                <input
+                  type="text"
+                  value={editFormData.title}
+                  onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+                  placeholder="输入知识点标题"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">知识点内容</label>
+                <textarea
+                  value={editFormData.content}
+                  onChange={(e) => setEditFormData({ ...editFormData, content: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent min-h-[100px]"
+                  placeholder="输入知识点内容"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">标签（用逗号分隔）</label>
+                <input
+                  type="text"
+                  value={editFormData.tags}
+                  onChange={(e) => setEditFormData({ ...editFormData, tags: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+                  placeholder="标签1, 标签2, 标签3"
+                />
+              </div>
+              <div className="flex space-x-4 pt-4">
+                <button
+                  onClick={() => {
+                    setIsEditing(false);
+                    setEditingId(null);
+                    setEditFormData({ title: '', content: '', tags: '' });
+                  }}
+                  className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
+                >
+                  取消
+                </button>
+                <button
+                  onClick={editingId ? handleUpdateKnowledgePoint : handleAddKnowledgePoint}
+                  className="flex-1 px-6 py-3 bg-sky-500 text-white rounded-xl font-medium hover:bg-sky-600 transition-colors flex items-center justify-center space-x-2"
+                >
+                  <Icon name="save" size={20} />
+                  <span>保存</span>
+                </button>
+              </div>
             </div>
-          )}
-        </div>
+          </div>
+        ) : (
+          <div className="bg-white rounded-2xl p-6 shadow-lg mb-8">
+            <h2 className="text-xl font-bold text-gray-900 mb-6">{currentSubject.name} 知识结构</h2>
+            
+            {subjectKnowledgePoints.length === 0 ? (
+              <div className="text-center py-16">
+                <div className="w-24 h-24 bg-sky-100 rounded-full mx-auto flex items-center justify-center mb-6">
+                  <Icon name="network" size={48} className="text-sky-500" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">还没有知识点数据</h3>
+                <p className="text-gray-600 mb-6">添加知识点后，这里会生成思维导图</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                {renderMindmap()}
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="mt-8 bg-white rounded-2xl p-6 shadow-lg">
           <h2 className="text-xl font-bold text-gray-900 mb-6">知识点统计</h2>
@@ -202,9 +328,25 @@ export function Mindmap() {
               <div key={kp.id} className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold text-gray-900">{kp.title}</h3>
-                  <span className="px-3 py-1 bg-sky-100 text-sky-700 rounded-full text-sm font-medium">
-                    {subjectQuestions.filter((q) => q.knowledgePoints.includes(kp.title)).length} 道题目
-                  </span>
+                  <div className="flex items-center space-x-2">
+                    <span className="px-3 py-1 bg-sky-100 text-sky-700 rounded-full text-sm font-medium">
+                      {subjectQuestions.filter((q) => q.knowledgePoints.includes(kp.title)).length} 道题目
+                    </span>
+                    <button
+                      onClick={() => handleEditKnowledgePoint(kp)}
+                      className="p-2 text-gray-500 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
+                      title="编辑知识点"
+                    >
+                      <Icon name="edit" size={18} />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteKnowledgePoint(kp.id)}
+                      className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                      title="删除知识点"
+                    >
+                      <Icon name="trash2" size={18} />
+                    </button>
+                  </div>
                 </div>
                 {kp.tags.length > 0 && (
                   <div className="mt-2 flex flex-wrap gap-2">

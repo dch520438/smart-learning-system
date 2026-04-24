@@ -1,4 +1,4 @@
-export type Level = 'primary' | 'middle' | 'high' | 'university';
+export type Level = string;
 export type Difficulty = 'easy' | 'medium' | 'hard';
 export type QuestionType = 'single' | 'multiple' | 'fill' | 'essay';
 
@@ -58,7 +58,30 @@ export interface TestRecord {
   questions: string[];
   answers: Record<string, string>;
   timeSpent: number;
-  createdAt: Date;
+  createdAt: string;
+}
+
+export interface StudyRecord {
+  id: string;
+  subjectId: string;
+  duration: number; // 学习时长（分钟）
+  startTime: string;
+  endTime: string;
+  focusLevel: 'low' | 'medium' | 'high'; // 专注程度
+  activities: string[]; // 学习活动
+  notes?: string; // 备注
+  createdAt: string;
+}
+
+export interface Paper {
+  id: string;
+  subjectId: string;
+  title: string;
+  date: string;
+  images: string[];
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface StudyAnalysis {

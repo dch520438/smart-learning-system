@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Icon } from './Icons';
 import { useAppStore } from '../store';
@@ -11,16 +11,19 @@ const levelLabels: Record<string, string> = {
 };
 
 const navItems = [
-  { path: '/', label: '首页', icon: 'home' },
-  { path: '/knowledge', label: '知识归纳', icon: 'book-open-check' },
-  { path: '/notes', label: '学习笔记', icon: 'sticky-note' },
+  { path: '/dashboard', label: '学科概览', icon: 'layout' },
+  { path: '/knowledge', label: '知识归纳', icon: 'book-open' },
+  { path: '/notes', label: '学习笔记', icon: 'file-text' },
   { path: '/memorize', label: '必背必记', icon: 'brain' },
   { path: '/mistakes', label: '错题整理', icon: 'alert-triangle' },
-  { path: '/patterns', label: '母题整理', icon: 'star' },
-  { path: '/same-point', label: '同考点归拢', icon: 'layers' },
-  { path: '/test', label: '模拟测试', icon: 'play' },
-  { path: '/practice', label: '做题模式', icon: 'target' },
+  { path: '/patterns', label: '母题整理', icon: 'layers' },
+  { path: '/same-point', label: '同考点归拢', icon: 'hash' },
+  { path: '/test', label: '模拟测试', icon: 'clipboard-list' },
+  { path: '/practice', label: '做题模式', icon: 'pen-tool' },
   { path: '/scores', label: '分数历史', icon: 'trending-up' },
+  { path: '/study', label: '学习记录', icon: 'clock' },
+  { path: '/papers', label: '试卷收集', icon: 'file' },
+  { path: '/scraper', label: '数据抓取', icon: 'globe' },
   { path: '/analysis', label: '学习分析', icon: 'line-chart' },
   { path: '/mindmap', label: '思维导图', icon: 'network' },
 ];
@@ -28,14 +31,127 @@ const navItems = [
 export function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { currentLevel, setCurrentLevel, currentSubject } = useAppStore();
+  const { currentLevel, setCurrentLevel, currentSubject, subjects, knowledgePoints, notes, questions, memorizeItems } = useAppStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showAddLevelModal, setShowAddLevelModal] = useState(false);
+  const [newLevelName, setNewLevelName] = useState('');
+  const [newLevelKey, setNewLevelKey] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+
+  // 获取所有唯一的年级
+  const uniqueLevels = Array.from(new Set(subjects.map(s => s.level)));
+
+  // 年级标签映射
+  const levelLabels: Record<string, string> = {
+    primary: '小学',
+    middle: '初中',
+    high: '高中',
+    university: '大学',
+  };
+
+  // 添加自定义年级标签
+  uniqueLevels.forEach(level => {
+    if (!levelLabels[level]) {
+      levelLabels[level] = level;
+    }
+  });
+
+  const handleAddLevel = () => {
+    if (newLevelName.trim() && newLevelKey.trim()) {
+      // 这里不需要添加到 store，只需要确保在添加学科时使用正确的年级键
+      setShowAddLevelModal(false);
+      setNewLevelName('');
+      setNewLevelKey('');
+    }
+  };
+
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+    
+    if (query.trim() === '') {
+      setSearchResults([]);
+      setShowSearchResults(false);
+      return;
+    }
+
+    // 搜索所有相关内容
+    const results: any[] = [];
+
+    // 搜索知识点
+    knowledgePoints.forEach(kp => {
+      if (kp.title.toLowerCase().includes(query.toLowerCase()) || 
+          kp.content.toLowerCase().includes(query.toLowerCase())) {
+        results.push({
+          type: 'knowledge',
+          title: kp.title,
+          content: kp.content,
+          id: kp.id,
+          path: '/knowledge'
+        });
+      }
+    });
+
+    // 搜索笔记
+    notes.forEach(note => {
+      if (note.title.toLowerCase().includes(query.toLowerCase()) || 
+          note.content.toLowerCase().includes(query.toLowerCase())) {
+        results.push({
+          type: 'note',
+          title: note.title,
+          content: note.content,
+          id: note.id,
+          path: '/notes'
+        });
+      }
+    });
+
+    // 搜索题目
+    questions.forEach(question => {
+      if (question.content.toLowerCase().includes(query.toLowerCase()) || 
+          question.answer.toLowerCase().includes(query.toLowerCase())) {
+        results.push({
+          type: 'question',
+          title: question.content.substring(0, 50) + '...',
+          content: question.answer,
+          id: question.id,
+          path: question.isMistake ? '/mistakes' : (question.isPattern ? '/patterns' : '/practice')
+        });
+      }
+    });
+
+    // 搜索必背内容
+    memorizeItems.forEach(item => {
+      if (item.title.toLowerCase().includes(query.toLowerCase()) || 
+          item.content.toLowerCase().includes(query.toLowerCase())) {
+        results.push({
+          type: 'memorize',
+          title: item.title,
+          content: item.content,
+          id: item.id,
+          path: '/memorize'
+        });
+      }
+    });
+
+    setSearchResults(results.slice(0, 10)); // 只显示前10个结果
+    setShowSearchResults(true);
+  };
+
+  const handleSearchResultClick = (result: any) => {
+    navigate(result.path);
+    setShowSearchResults(false);
+    setSearchQuery('');
+  };
 
   return (
     <nav className="bg-white shadow-lg sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          <div className="flex items-center">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between h-auto md:h-16 py-4 md:py-0">
+          {/* 品牌标识 */}
+          <div className="flex items-center mb-4 md:mb-0">
             <Link to="/" className="flex items-center space-x-2">
               <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-green-500 rounded-xl flex items-center justify-center">
                 <Icon name="brain" size={24} className="text-white" />
@@ -46,10 +162,77 @@ export function Navbar() {
             </Link>
           </div>
 
-          <div className="hidden md:flex items-center space-x-1">
-            {navItems.slice(0, 8).map((item) => (
+          {/* 搜索框 */}
+          <div className="relative mb-4 md:mb-0 w-full md:w-64">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={handleSearch}
+              placeholder="搜索知识点、笔记、题目..."
+              className="w-full px-4 py-2 pr-10 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+            <Icon name="search" size={18} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            {showSearchResults && searchResults.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-lg border border-gray-200 max-h-80 overflow-y-auto z-50">
+                {searchResults.map((result) => (
+                  <div
+                    key={result.id}
+                    onClick={() => handleSearchResultClick(result)}
+                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                  >
+                    <div className="font-medium text-gray-900">{result.title}</div>
+                    <div className="text-sm text-gray-600 truncate">{result.content.substring(0, 100)}...</div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      {result.type === 'knowledge' && '知识点'}
+                      {result.type === 'note' && '笔记'}
+                      {result.type === 'question' && '题目'}
+                      {result.type === 'memorize' && '必背内容'}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* 年级选择 */}
+          <div className="flex items-center space-x-2 mb-4 md:mb-0">
+            {uniqueLevels.map((level) => (
+              <button
+                key={level}
+                onClick={() => setCurrentLevel(level)}
+                className={`px-3 py-1 rounded-full text-sm font-medium transition-all duration-200 ${
+                  currentLevel === level
+                    ? 'bg-blue-500 text-white'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                {levelLabels[level]}
+              </button>
+            ))}
+            <button
+              onClick={() => setShowAddLevelModal(true)}
+              className="px-3 py-1 rounded-full text-sm font-medium transition-all duration-200 text-gray-600 hover:bg-gray-100 flex items-center"
+            >
+              <Icon name="plus" size={14} className="mr-1" />
+              添加年级
+            </button>
+          </div>
+
+          {/* 移动端菜单按钮 */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden p-2 rounded-lg hover:bg-gray-100"
+          >
+            <Icon name="menu" size={24} />
+          </button>
+        </div>
+
+        {/* 桌面端导航菜单 */}
+        <div className="hidden md:flex items-center justify-center space-x-1 py-2">
+          {navItems.map((item, index) => (
+            <React.Fragment key={item.path}>
+              {index > 0 && <div className="w-px h-6 bg-gray-200 mx-1"></div>}
               <Link
-                key={item.path}
                 to={item.path}
                 className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center space-x-1 ${
                   location.pathname === item.path
@@ -57,36 +240,11 @@ export function Navbar() {
                     : 'text-gray-600 hover:bg-gray-100'
                 }`}
               >
-                <Icon name={item.icon} size={18} />
+                <Icon name={item.icon} size={16} />
                 <span>{item.label}</span>
               </Link>
-            ))}
-          </div>
-
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              {(['primary', 'middle', 'high', 'university'] as const).map((level) => (
-                <button
-                  key={level}
-                  onClick={() => setCurrentLevel(level)}
-                  className={`px-3 py-1 rounded-full text-sm font-medium transition-all duration-200 ${
-                    currentLevel === level
-                      ? 'bg-blue-500 text-white'
-                      : 'text-gray-600 hover:bg-gray-100'
-                  }`}
-                >
-                  {levelLabels[level]}
-                </button>
-              ))}
-            </div>
-
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 rounded-lg hover:bg-gray-100"
-            >
-              <Icon name="menu" size={24} />
-            </button>
-          </div>
+            </React.Fragment>
+          ))}
         </div>
       </div>
 
@@ -137,6 +295,62 @@ export function Navbar() {
               >
                 <Icon name="x" size={16} />
                 <span>切换</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 添加年级模态框 */}
+      {showAddLevelModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-8 max-w-md w-full">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-bold text-gray-900">添加年级</h3>
+              <button
+                onClick={() => setShowAddLevelModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <Icon name="x" size={24} />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">年级名称</label>
+                <input
+                  type="text"
+                  value={newLevelName}
+                  onChange={(e) => setNewLevelName(e.target.value)}
+                  placeholder="请输入年级名称（如：学前班）"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">年级键值</label>
+                <input
+                  type="text"
+                  value={newLevelKey}
+                  onChange={(e) => setNewLevelKey(e.target.value)}
+                  placeholder="请输入年级键值（如：preschool）"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+            </div>
+            
+            <div className="mt-8 flex justify-end space-x-4">
+              <button
+                onClick={() => setShowAddLevelModal(false)}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+              >
+                取消
+              </button>
+              <button
+                onClick={handleAddLevel}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                确定
               </button>
             </div>
           </div>
