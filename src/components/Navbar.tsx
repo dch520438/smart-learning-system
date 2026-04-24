@@ -81,7 +81,7 @@ export function Navbar() {
   };
 
   return (
-    <nav className="bg-white shadow-lg sticky top-0 z-50">
+    <nav className="bg-white dark:bg-gray-900 shadow-lg sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between h-auto md:h-16 py-4 md:py-0">
           {/* 品牌标识 */}
@@ -111,11 +111,11 @@ export function Navbar() {
               value={searchQuery}
               onChange={handleSearch}
               placeholder="搜索知识点、笔记、题目..."
-              className="w-full px-4 py-2 pr-10 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-4 py-2 pr-10 rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
             <button 
               type="submit"
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-blue-500 transition-colors"
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-blue-500 transition-colors"
             >
               <Icon name="search" size={18} />
             </button>
@@ -130,7 +130,7 @@ export function Navbar() {
                 className={`px-3 py-1 rounded-full text-sm font-medium transition-all duration-200 ${
                   currentLevel === level
                     ? 'bg-blue-500 text-white'
-                    : 'text-gray-600 hover:bg-gray-100'
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                 }`}
               >
                 {levelLabels[level]}
@@ -138,7 +138,7 @@ export function Navbar() {
             ))}
             <button
               onClick={() => setShowAddLevelModal(true)}
-              className="px-3 py-1 rounded-full text-sm font-medium transition-all duration-200 text-gray-600 hover:bg-gray-100 flex items-center"
+              className="px-3 py-1 rounded-full text-sm font-medium transition-all duration-200 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center"
             >
               <Icon name="plus" size={14} className="mr-1" />
               添加年级
@@ -148,7 +148,7 @@ export function Navbar() {
           {/* 移动端菜单按钮 */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 rounded-lg hover:bg-gray-100"
+            className="md:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
           >
             <Icon name="menu" size={24} />
           </button>
@@ -158,13 +158,13 @@ export function Navbar() {
         <div className="hidden md:flex items-center justify-center space-x-1 py-2">
           {navItems.map((item, index) => (
             <React.Fragment key={item.path}>
-              {index > 0 && <div className="w-px h-6 bg-gray-200 mx-1"></div>}
+              {index > 0 && <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-1"></div>}
               <Link
                 to={item.path}
                 className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center space-x-1 ${
                   location.pathname === item.path
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'text-gray-600 hover:bg-gray-100'
+                    ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                 }`}
               >
                 <Icon name={item.icon} size={16} />
@@ -176,7 +176,7 @@ export function Navbar() {
       </div>
 
       {mobileMenuOpen && (
-        <div className="md:hidden bg-white border-t">
+        <div className="md:hidden bg-white dark:bg-gray-900 border-t dark:border-gray-800">
           <div className="px-4 py-3 space-y-1">
             {navItems.map((item) => (
               <Link
@@ -185,8 +185,8 @@ export function Navbar() {
                 onClick={() => setMobileMenuOpen(false)}
                 className={`px-3 py-2 rounded-lg text-sm font-medium flex items-center space-x-2 ${
                   location.pathname === item.path
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'text-gray-600 hover:bg-gray-100'
+                    ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                 }`}
               >
                 <Icon name={item.icon} size={18} />
@@ -198,7 +198,7 @@ export function Navbar() {
       )}
 
       {currentSubject && (
-        <div className="bg-gray-50 border-t">
+        <div className="bg-gray-50 dark:bg-gray-800 border-t dark:border-gray-700">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
@@ -212,13 +212,13 @@ export function Navbar() {
                     style={{ color: currentSubject.color }}
                   />
                 </div>
-                <span className="font-medium text-gray-800">
+                <span className="font-medium text-gray-800 dark:text-gray-200">
                   {levelLabels[currentSubject.level]} · {currentSubject.name}
                 </span>
               </div>
               <button
                 onClick={() => navigate('/')}
-                className="text-sm text-gray-500 hover:text-gray-700 flex items-center space-x-1"
+                className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 flex items-center space-x-1"
               >
                 <Icon name="x" size={16} />
                 <span>切换</span>
@@ -231,12 +231,12 @@ export function Navbar() {
       {/* 添加年级模态框 */}
       {showAddLevelModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-8 max-w-md w-full">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl p-8 max-w-md w-full">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-2xl font-bold text-gray-900">添加年级</h3>
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white">添加年级</h3>
               <button
                 onClick={() => setShowAddLevelModal(false)}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
               >
                 <Icon name="x" size={24} />
               </button>
@@ -244,24 +244,24 @@ export function Navbar() {
             
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">年级名称</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">年级名称</label>
                 <input
                   type="text"
                   value={newLevelName}
                   onChange={(e) => setNewLevelName(e.target.value)}
                   placeholder="请输入年级名称（如：学前班）"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">年级键值</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">年级键值</label>
                 <input
                   type="text"
                   value={newLevelKey}
                   onChange={(e) => setNewLevelKey(e.target.value)}
                   placeholder="请输入年级键值（如：preschool）"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
             </div>
@@ -269,7 +269,7 @@ export function Navbar() {
             <div className="mt-8 flex justify-end space-x-4">
               <button
                 onClick={() => setShowAddLevelModal(false)}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                className="px-4 py-2 border border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
               >
                 取消
               </button>

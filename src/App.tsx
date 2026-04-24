@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { useEffect } from "react";
 import { Navbar } from "./components/Navbar";
 import { Home } from "./pages/Home";
 import { Dashboard } from "./pages/Dashboard";
@@ -21,9 +22,25 @@ import { SearchPage } from "./pages/SearchPage";
 import { Placeholder } from "./pages/Placeholder";
 
 export default function App() {
+  // 初始化主题设置
+  useEffect(() => {
+    const themeMode = localStorage.getItem('themeMode') as 'light' | 'dark' | 'system' || 'system';
+    const backgroundColor = localStorage.getItem('backgroundColor') as 'default' | 'blue' | 'green' | 'purple' | 'orange' || 'default';
+    
+    // 应用主题模式
+    const isDark = themeMode === 'dark' || (themeMode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    document.documentElement.classList.toggle('dark', isDark);
+    
+    // 应用背景颜色
+    document.documentElement.classList.remove('bg-blue', 'bg-green', 'bg-purple', 'bg-orange');
+    if (backgroundColor !== 'default') {
+      document.documentElement.classList.add(`bg-${backgroundColor}`);
+    }
+  }, []);
+
   return (
     <Router>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen">
         <Navbar />
         <Routes>
           <Route path="/" element={<Home />} />
