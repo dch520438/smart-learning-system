@@ -26,12 +26,17 @@ export default defineConfig({
     tsconfigPaths(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'pwa-192x192.svg'],
+      includeAssets: ['favicon.svg', 'pwa-192x192.svg', 'pwa-512x512.svg'],
       manifest: {
         name: '智慧学习整理系统',
         short_name: '智慧学习',
         description: '全学科学习整理与错题管理平台',
         theme_color: '#3B82F6',
+        background_color: '#ffffff',
+        start_url: '/',
+        display: 'standalone',
+        lang: 'zh-CN',
+        scope: '/',
         icons: [
           {
             src: 'pwa-192x192.svg',
@@ -39,18 +44,19 @@ export default defineConfig({
             type: 'image/svg+xml'
           },
           {
-            src: 'pwa-192x192.svg',
+            src: 'pwa-512x512.svg',
             sizes: '512x512',
             type: 'image/svg+xml'
           },
           {
-            src: 'pwa-192x192.svg',
+            src: 'pwa-512x512.svg',
             sizes: '512x512',
             type: 'image/svg+xml',
             purpose: 'any maskable'
           }
         ]
       },
+      filename: 'manifest.json',
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg}'],
         runtimeCaching: [
