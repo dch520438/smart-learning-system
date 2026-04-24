@@ -1,14 +1,25 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Level, Subject, KnowledgePoint, Note, Question, TestRecord, StudyAnalysis, MemorizeItem, StudyRecord, Paper } from '../types';
+import type { Level, Subject, KnowledgePoint, Note, Question, TestRecord, StudyAnalysis, MemorizeItem, StudyRecord, Paper, User } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 
 interface AppState {
+  // 用户认证相关
+  isAuthenticated: boolean;
+  currentUser: User | null;
+  users: User[];
+  login: (email: string, password: string) => boolean;
+  register: (username: string, email: string, password: string) => boolean;
+  logout: () => void;
+  switchUser: (userId: string) => void;
+  
+  // 应用状态
   currentLevel: Level;
   setCurrentLevel: (level: Level) => void;
   currentSubject: Subject | null;
   setCurrentSubject: (subject: Subject | null) => void;
   
+  // 数据
   subjects: Subject[];
   knowledgePoints: KnowledgePoint[];
   questions: Question[];
@@ -17,27 +28,28 @@ interface AppState {
   studyRecords: StudyRecord[];
   studyAnalyses: StudyAnalysis[];
   memorizeItems: MemorizeItem[];
+  papers: Paper[];
   
-  addSubject: (subject: Omit<Subject, 'id'>) => void;
-  addKnowledgePoint: (kp: Omit<KnowledgePoint, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  // 数据操作
+  addSubject: (subject: Omit<Subject, 'id' | 'userId'>) => void;
+  addKnowledgePoint: (kp: Omit<KnowledgePoint, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => void;
   updateKnowledgePoint: (id: string, kp: Partial<KnowledgePoint>) => void;
   deleteKnowledgePoint: (id: string) => void;
-  addQuestion: (question: Omit<Question, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  addQuestion: (question: Omit<Question, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => void;
   updateQuestion: (id: string, question: Partial<Question>) => void;
   deleteQuestion: (id: string) => void;
-  addNote: (note: Omit<Note, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  addNote: (note: Omit<Note, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => void;
   updateNote: (id: string, note: Partial<Note>) => void;
   deleteNote: (id: string) => void;
-  addTestRecord: (record: Omit<TestRecord, 'id' | 'createdAt'>) => void;
-  addStudyRecord: (record: Omit<StudyRecord, 'id' | 'createdAt'>) => void;
+  addTestRecord: (record: Omit<TestRecord, 'id' | 'createdAt' | 'userId'>) => void;
+  addStudyRecord: (record: Omit<StudyRecord, 'id' | 'createdAt' | 'userId'>) => void;
   updateStudyRecord: (id: string, record: Partial<StudyRecord>) => void;
   deleteStudyRecord: (id: string) => void;
-  papers: Paper[];
-  addPaper: (paper: Omit<Paper, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  addPaper: (paper: Omit<Paper, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => void;
   updatePaper: (id: string, paper: Partial<Paper>) => void;
   deletePaper: (id: string) => void;
-  addStudyAnalysis: (analysis: Omit<StudyAnalysis, 'id' | 'createdAt'>) => void;
-  addMemorizeItem: (item: Omit<MemorizeItem, 'id' | 'createdAt' | 'updatedAt' | 'isMemorized'>) => void;
+  addStudyAnalysis: (analysis: Omit<StudyAnalysis, 'id' | 'createdAt' | 'userId'>) => void;
+  addMemorizeItem: (item: Omit<MemorizeItem, 'id' | 'createdAt' | 'updatedAt' | 'isMemorized' | 'userId'>) => void;
   updateMemorizeItem: (id: string, item: Partial<MemorizeItem>) => void;
   deleteMemorizeItem: (id: string) => void;
   toggleMemorizeStatus: (id: string) => void;
@@ -52,66 +64,91 @@ interface AppState {
   setPapers: (papers: Paper[]) => void;
 }
 
-const initialSubjects: Subject[] = [
-  { id: uuidv4(), name: '语文', level: 'primary', icon: 'book-open', color: '#EF4444' },
-  { id: uuidv4(), name: '数学', level: 'primary', icon: 'calculator', color: '#3B82F6' },
-  { id: uuidv4(), name: '英语', level: 'primary', icon: 'languages', color: '#10B981' },
-  { id: uuidv4(), name: '科学', level: 'primary', icon: 'flask', color: '#F59E0B' },
-  { id: uuidv4(), name: '语文', level: 'middle', icon: 'book-open', color: '#EF4444' },
-  { id: uuidv4(), name: '数学', level: 'middle', icon: 'calculator', color: '#3B82F6' },
-  { id: uuidv4(), name: '英语', level: 'middle', icon: 'languages', color: '#10B981' },
-  { id: uuidv4(), name: '物理', level: 'middle', icon: 'zap', color: '#8B5CF6' },
-  { id: uuidv4(), name: '化学', level: 'middle', icon: 'flask', color: '#F59E0B' },
-  { id: uuidv4(), name: '生物', level: 'middle', icon: 'leaf', color: '#14B8A6' },
-  { id: uuidv4(), name: '历史', level: 'middle', icon: 'history', color: '#EC4899' },
-  { id: uuidv4(), name: '地理', level: 'middle', icon: 'globe', color: '#06B6D4' },
-  { id: uuidv4(), name: '政治', level: 'middle', icon: 'landmark', color: '#6366F1' },
-  { id: uuidv4(), name: '语文', level: 'high', icon: 'book-open', color: '#EF4444' },
-  { id: uuidv4(), name: '数学', level: 'high', icon: 'calculator', color: '#3B82F6' },
-  { id: uuidv4(), name: '英语', level: 'high', icon: 'languages', color: '#10B981' },
-  { id: uuidv4(), name: '物理', level: 'high', icon: 'zap', color: '#8B5CF6' },
-  { id: uuidv4(), name: '化学', level: 'high', icon: 'flask', color: '#F59E0B' },
-  { id: uuidv4(), name: '生物', level: 'high', icon: 'leaf', color: '#14B8A6' },
-  { id: uuidv4(), name: '历史', level: 'high', icon: 'history', color: '#EC4899' },
-  { id: uuidv4(), name: '地理', level: 'high', icon: 'globe', color: '#06B6D4' },
-  { id: uuidv4(), name: '政治', level: 'high', icon: 'landmark', color: '#6366F1' },
-  { id: uuidv4(), name: '高等数学', level: 'university', icon: 'calculator', color: '#3B82F6' },
-  { id: uuidv4(), name: '线性代数', level: 'university', icon: 'grid', color: '#8B5CF6' },
-  { id: uuidv4(), name: '概率论', level: 'university', icon: 'dice', color: '#10B981' },
-  { id: uuidv4(), name: '大学物理', level: 'university', icon: 'zap', color: '#F59E0B' },
-  { id: uuidv4(), name: '计算机基础', level: 'university', icon: 'computer', color: '#06B6D4' },
-];
+
 
 export const useAppStore = create<AppState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
+      // 用户认证相关
+      isAuthenticated: false,
+      currentUser: null,
+      users: [],
+      
+      login: (email, password) => {
+        const { users } = get();
+        const user = users.find(u => u.email === email && u.password === password);
+        if (user) {
+          set({ isAuthenticated: true, currentUser: user });
+          return true;
+        }
+        return false;
+      },
+      
+      register: (username, email, password) => {
+        const { users } = get();
+        if (users.some(u => u.email === email)) {
+          return false;
+        }
+        const newUser: User = {
+          id: uuidv4(),
+          username,
+          email,
+          password,
+          createdAt: new Date()
+        };
+        set({ users: [...users, newUser], isAuthenticated: true, currentUser: newUser });
+        return true;
+      },
+      
+      logout: () => {
+        set({ isAuthenticated: false, currentUser: null });
+      },
+      
+      switchUser: (userId) => {
+        const { users } = get();
+        const user = users.find(u => u.id === userId);
+        if (user) {
+          set({ currentUser: user });
+        }
+      },
+      
+      // 应用状态
       currentLevel: 'primary',
       setCurrentLevel: (level) => set({ currentLevel: level }),
       currentSubject: null,
       setCurrentSubject: (subject) => set({ currentSubject: subject }),
       
-      subjects: initialSubjects,
-    knowledgePoints: [],
-    questions: [],
-    notes: [],
-    testRecords: [],
-    studyRecords: [],
-    papers: [],
-    studyAnalyses: [],
-    memorizeItems: [],
+      // 数据
+      subjects: [],
+      knowledgePoints: [],
+      questions: [],
+      notes: [],
+      testRecords: [],
+      studyRecords: [],
+      papers: [],
+      studyAnalyses: [],
+      memorizeItems: [],
       
-      addSubject: (subject) => set((state) => ({
-        subjects: [...state.subjects, { ...subject, id: uuidv4() }]
-      })),
+      // 数据操作
+      addSubject: (subject) => set((state) => {
+        if (!state.currentUser) return state;
+        return {
+          subjects: [...state.subjects, { ...subject, id: uuidv4(), userId: state.currentUser.id }]
+        };
+      }),
       
-      addKnowledgePoint: (kp) => set((state) => ({
-        knowledgePoints: [...state.knowledgePoints, {
-          ...kp,
-          id: uuidv4(),
-          createdAt: new Date(),
-          updatedAt: new Date()
-        }]
-      })),
+      addKnowledgePoint: (kp) => set((state) => {
+        if (!state.currentUser) return state;
+        return {
+          knowledgePoints: [...state.knowledgePoints, {
+            ...kp,
+            id: uuidv4(),
+            userId: state.currentUser.id,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          }]
+        };
+      }),
       
       updateKnowledgePoint: (id, kp) => set((state) => ({
         knowledgePoints: state.knowledgePoints.map(item =>
@@ -123,14 +160,18 @@ export const useAppStore = create<AppState>()(
         knowledgePoints: state.knowledgePoints.filter(item => item.id !== id)
       })),
       
-      addQuestion: (question) => set((state) => ({
-        questions: [...state.questions, {
-          ...question,
-          id: uuidv4(),
-          createdAt: new Date(),
-          updatedAt: new Date()
-        }]
-      })),
+      addQuestion: (question) => set((state) => {
+        if (!state.currentUser) return state;
+        return {
+          questions: [...state.questions, {
+            ...question,
+            id: uuidv4(),
+            userId: state.currentUser.id,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          }]
+        };
+      }),
       
       updateQuestion: (id, question) => set((state) => ({
         questions: state.questions.map(item =>
@@ -142,14 +183,18 @@ export const useAppStore = create<AppState>()(
         questions: state.questions.filter(item => item.id !== id)
       })),
       
-      addNote: (note) => set((state) => ({
-        notes: [...state.notes, {
-          ...note,
-          id: uuidv4(),
-          createdAt: new Date(),
-          updatedAt: new Date()
-        }]
-      })),
+      addNote: (note) => set((state) => {
+        if (!state.currentUser) return state;
+        return {
+          notes: [...state.notes, {
+            ...note,
+            id: uuidv4(),
+            userId: state.currentUser.id,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          }]
+        };
+      }),
       
       updateNote: (id, note) => set((state) => ({
         notes: state.notes.map(item =>
@@ -161,21 +206,29 @@ export const useAppStore = create<AppState>()(
         notes: state.notes.filter(item => item.id !== id)
       })),
       
-      addTestRecord: (record) => set((state) => ({
-        testRecords: [...state.testRecords, {
-          ...record,
-          id: uuidv4(),
-          createdAt: new Date().toISOString()
-        }]
-      })),
+      addTestRecord: (record) => set((state) => {
+        if (!state.currentUser) return state;
+        return {
+          testRecords: [...state.testRecords, {
+            ...record,
+            id: uuidv4(),
+            userId: state.currentUser.id,
+            createdAt: new Date().toISOString()
+          }]
+        };
+      }),
       
-      addStudyRecord: (record) => set((state) => ({
-        studyRecords: [...state.studyRecords, {
-          ...record,
-          id: uuidv4(),
-          createdAt: new Date().toISOString()
-        }]
-      })),
+      addStudyRecord: (record) => set((state) => {
+        if (!state.currentUser) return state;
+        return {
+          studyRecords: [...state.studyRecords, {
+            ...record,
+            id: uuidv4(),
+            userId: state.currentUser.id,
+            createdAt: new Date().toISOString()
+          }]
+        };
+      }),
       
       updateStudyRecord: (id, record) => set((state) => ({
         studyRecords: state.studyRecords.map(item =>
@@ -187,14 +240,18 @@ export const useAppStore = create<AppState>()(
         studyRecords: state.studyRecords.filter(item => item.id !== id)
       })),
       
-      addPaper: (paper) => set((state) => ({
-        papers: [...state.papers, {
-          ...paper,
-          id: uuidv4(),
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        }]
-      })),
+      addPaper: (paper) => set((state) => {
+        if (!state.currentUser) return state;
+        return {
+          papers: [...state.papers, {
+            ...paper,
+            id: uuidv4(),
+            userId: state.currentUser.id,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          }]
+        };
+      }),
       
       updatePaper: (id, paper) => set((state) => ({
         papers: state.papers.map(item =>
@@ -206,31 +263,42 @@ export const useAppStore = create<AppState>()(
         papers: state.papers.filter(item => item.id !== id)
       })),
       
-      addStudyAnalysis: (analysis) => set((state) => ({
-        studyAnalyses: [...state.studyAnalyses, {
-          ...analysis,
-          id: uuidv4(),
-          createdAt: new Date()
-        }]
-      })),
+      addStudyAnalysis: (analysis) => set((state) => {
+        if (!state.currentUser) return state;
+        return {
+          studyAnalyses: [...state.studyAnalyses, {
+            ...analysis,
+            id: uuidv4(),
+            userId: state.currentUser.id,
+            createdAt: new Date()
+          }]
+        };
+      }),
       
-      addMemorizeItem: (item) => set((state) => ({
-        memorizeItems: [...state.memorizeItems, {
-          ...item,
-          id: uuidv4(),
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          isMemorized: false
-        }]
-      })),
+      addMemorizeItem: (item) => set((state) => {
+        if (!state.currentUser) return state;
+        return {
+          memorizeItems: [...state.memorizeItems, {
+            ...item,
+            id: uuidv4(),
+            userId: state.currentUser.id,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            isMemorized: false
+          }]
+        };
+      }),
+      
       updateMemorizeItem: (id, item) => set((state) => ({
         memorizeItems: state.memorizeItems.map(i =>
           i.id === id ? { ...i, ...item, updatedAt: new Date() } : i
         )
       })),
+      
       deleteMemorizeItem: (id) => set((state) => ({
         memorizeItems: state.memorizeItems.filter(i => i.id !== id)
       })),
+      
       toggleMemorizeStatus: (id) => set((state) => ({
         memorizeItems: state.memorizeItems.map(i =>
           i.id === id ? { ...i, isMemorized: !i.isMemorized, updatedAt: new Date() } : i

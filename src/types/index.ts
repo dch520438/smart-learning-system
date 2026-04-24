@@ -4,6 +4,7 @@ export type QuestionType = 'single' | 'multiple' | 'fill' | 'essay';
 
 export interface Subject {
   id: string;
+  userId: string;
   name: string;
   level: Level;
   icon: string;
@@ -12,6 +13,7 @@ export interface Subject {
 
 export interface KnowledgePoint {
   id: string;
+  userId: string;
   subjectId: string;
   title: string;
   content: string;
@@ -23,6 +25,7 @@ export interface KnowledgePoint {
 
 export interface Question {
   id: string;
+  userId: string;
   subjectId: string;
   content: string;
   answer: string;
@@ -40,6 +43,7 @@ export interface Question {
 
 export interface Note {
   id: string;
+  userId: string;
   subjectId: string;
   title: string;
   content: string;
@@ -52,6 +56,7 @@ export interface Note {
 
 export interface TestRecord {
   id: string;
+  userId: string;
   subjectId: string;
   title: string;
   score: number;
@@ -64,6 +69,7 @@ export interface TestRecord {
 
 export interface StudyRecord {
   id: string;
+  userId: string;
   subjectId: string;
   duration: number; // 学习时长（分钟）
   startTime: string;
@@ -76,6 +82,7 @@ export interface StudyRecord {
 
 export interface Paper {
   id: string;
+  userId: string;
   subjectId: string;
   title: string;
   date: string;
@@ -87,6 +94,7 @@ export interface Paper {
 
 export interface StudyAnalysis {
   id: string;
+  userId: string;
   subjectId: string;
   weakPoints: string[];
   suggestions: string[];
@@ -96,6 +104,7 @@ export interface StudyAnalysis {
 
 export interface MemorizeItem {
   id: string;
+  userId: string;
   subjectId: string;
   title: string;
   content: string;
@@ -104,4 +113,22 @@ export interface MemorizeItem {
   isMemorized: boolean;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface User {
+  id: string;
+  username: string;
+  email: string;
+  password: string;
+  createdAt: Date;
+}
+
+export interface AuthState {
+  isAuthenticated: boolean;
+  currentUser: User | null;
+  users: User[];
+  login: (email: string, password: string) => boolean;
+  register: (username: string, email: string, password: string) => boolean;
+  logout: () => void;
+  switchUser: (userId: string) => void;
 }

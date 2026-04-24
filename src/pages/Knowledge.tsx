@@ -8,7 +8,7 @@ import 'react-quill/dist/quill.snow.css';
 
 export function Knowledge() {
   const navigate = useNavigate();
-  const { currentSubject, knowledgePoints, addKnowledgePoint, updateKnowledgePoint, deleteKnowledgePoint } = useAppStore();
+  const { currentSubject, currentUser, knowledgePoints, addKnowledgePoint, updateKnowledgePoint, deleteKnowledgePoint } = useAppStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -26,7 +26,7 @@ export function Knowledge() {
     return null;
   }
 
-  const subjectKnowledge = knowledgePoints.filter((kp) => kp.subjectId === currentSubject.id);
+  const subjectKnowledge = knowledgePoints.filter((kp) => kp.subjectId === currentSubject.id && kp.userId === currentUser?.id);
 
   // 获取所有标签
   const allTags = useMemo(() => {

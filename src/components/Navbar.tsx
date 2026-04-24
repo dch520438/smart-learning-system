@@ -32,7 +32,7 @@ const navItems = [
 export function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { currentLevel, setCurrentLevel, currentSubject, subjects, knowledgePoints, notes, questions, memorizeItems } = useAppStore();
+  const { currentLevel, setCurrentLevel, currentSubject, subjects, knowledgePoints, notes, questions, memorizeItems, currentUser, users, logout, switchUser } = useAppStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showAddLevelModal, setShowAddLevelModal] = useState(false);
   const [newLevelName, setNewLevelName] = useState('');
@@ -40,6 +40,7 @@ export function Navbar() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
   // 获取所有唯一的年级
   const uniqueLevels = Array.from(new Set(subjects.map(s => s.level)));
@@ -145,10 +146,70 @@ export function Navbar() {
             </button>
           </div>
 
+          {/* 用户菜单 */}
+          <div className="relative">
+            <button
+              onClick={() => setShowUserMenu(!showUserMenu)}
+              className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+            >
+              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-green-500 rounded-full flex items-center justify-center">
+                <span className="text-white font-medium">
+                  {currentUser?.username.charAt(0).toUpperCase() || 'U'}
+                </span>
+              </div>
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                {currentUser?.username || '用户'}
+              </span>
+              <Icon name="chevron-down" size={16} className="text-gray-500 dark:text-gray-400" />
+            </button>
+            
+            {showUserMenu && (
+              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-900 rounded-lg shadow-lg py-2 z-50">
+                {/* 用户切换 */}
+                <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-800">
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">切换用户</p>
+                  {users.map((user) => (
+                    <button
+                      key={user.id}
+                      onClick={() => {
+                        switchUser(user.id);
+                        setShowUserMenu(false);
+                      }}
+                      className={`w-full text-left px-3 py-2 rounded-lg text-sm ${currentUser?.id === user.id ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300' : 'hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-green-500 rounded-full flex items-center justify-center">
+                          <span className="text-white text-xs font-medium">
+                            {user.username.charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                        <span>{user.username}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+                
+                {/* 登出按钮 */}
+                <button
+                  onClick={() => {
+                    logout();
+                    navigate('/auth');
+                  }}
+                  className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                >
+                  <div className="flex items-center space-x-2">
+                    <Icon name="log-out" size={16} />
+                    <span>登出</span>
+                  </div>
+                </button>
+              </div>
+            )}
+          </div>
+          
           {/* 移动端菜单按钮 */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+            className="md:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 ml-2"
           >
             <Icon name="menu" size={24} />
           </button>

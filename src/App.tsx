@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { useEffect } from "react";
 import { Navbar } from "./components/Navbar";
 import { Home } from "./pages/Home";
@@ -20,6 +20,17 @@ import { Scraper } from "./pages/Scraper";
 import { Settings } from "./pages/Settings";
 import { SearchPage } from "./pages/SearchPage";
 import { Placeholder } from "./pages/Placeholder";
+import { AuthPage } from "./pages/AuthPage";
+import { useAppStore } from "./store";
+
+// 路由保护组件
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated } = useAppStore();
+  if (!isAuthenticated) {
+    return <Navigate to="/auth" replace />;
+  }
+  return children;
+}
 
 export default function App() {
   // 初始化主题设置
@@ -40,29 +51,36 @@ export default function App() {
 
   return (
     <Router>
-      <div className="min-h-screen">
-        <Navbar />
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/knowledge" element={<Knowledge />} />
-          <Route path="/notes" element={<Notes />} />
-          <Route path="/memorize" element={<Memorize />} />
-          <Route path="/mistakes" element={<Mistakes />} />
-          <Route path="/patterns" element={<Patterns />} />
-          <Route path="/same-point" element={<SamePoint />} />
-          <Route path="/test" element={<Test />} />
-          <Route path="/practice" element={<Practice />} />
-          <Route path="/scores" element={<Scores />} />
-          <Route path="/study" element={<Study />} />
-          <Route path="/papers" element={<Papers />} />
-          <Route path="/analysis" element={<Analysis />} />
-          <Route path="/mindmap" element={<Mindmap />} />
-          <Route path="/scraper" element={<Scraper />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/search" element={<SearchPage />} />
-        </Routes>
-      </div>
+      <Routes>
+        <Route path="/auth" element={<AuthPage />} />
+        <Route path="/*" element={
+          <ProtectedRoute>
+            <div className="min-h-screen">
+              <Navbar />
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/knowledge" element={<Knowledge />} />
+                <Route path="/notes" element={<Notes />} />
+                <Route path="/memorize" element={<Memorize />} />
+                <Route path="/mistakes" element={<Mistakes />} />
+                <Route path="/patterns" element={<Patterns />} />
+                <Route path="/same-point" element={<SamePoint />} />
+                <Route path="/test" element={<Test />} />
+                <Route path="/practice" element={<Practice />} />
+                <Route path="/scores" element={<Scores />} />
+                <Route path="/study" element={<Study />} />
+                <Route path="/papers" element={<Papers />} />
+                <Route path="/analysis" element={<Analysis />} />
+                <Route path="/mindmap" element={<Mindmap />} />
+                <Route path="/scraper" element={<Scraper />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/search" element={<SearchPage />} />
+              </Routes>
+            </div>
+          </ProtectedRoute>
+        } />
+      </Routes>
     </Router>
   );
 }
