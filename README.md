@@ -1,57 +1,125 @@
-# React + TypeScript + Vite
+# 智慧学习整理系统
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+智慧学习整理系统是一个全学科学习管理平台，支持小学、初中、高中、大学的所有学科，提供知识归纳、必背必记、学习笔记、错题整理、母题整理、分数历史比对、同考点题目归拢、模拟测试和做题模式等功能。
 
-Currently, two official plugins are available:
+## 功能特性
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### 核心功能
+- **全学科分类**：支持小学、初中、高中、大学的所有学科
+- **知识归纳**：管理和整理知识点，支持图片和学科符号
+- **必背必记**：管理需要记忆的内容，跟踪记忆进度
+- **学习笔记**：记录和管理学习笔记
+- **错题整理**：收集和分析错题，提供针对性练习
+- **母题整理**：整理母题，掌握解题技巧
+- **分数历史**：记录和分析分数趋势
+- **同考点归拢**：将相同考点的题目归类
+- **模拟测试**：进行模拟考试，评估学习效果
+- **做题模式**：提供针对性的练习模式
 
-## Expanding the ESLint configuration
+### 高级功能
+- **自动思维导图**：根据知识点自动生成思维导图
+- **学习分析**：分析学习情况，识别薄弱环节
+- **跨平台支持**：支持 Windows、安卓和麒麟系统
+- **离线使用**：支持离线访问和本地存储
+- **响应式设计**：适配不同屏幕尺寸
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## 技术栈
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+- **前端框架**：React 18 + TypeScript + Tailwind CSS + Vite
+- **状态管理**：Zustand
+- **路由**：React Router
+- **数据可视化**：Recharts
+- **跨平台支持**：PWA (Progressive Web App)
+- **数据存储**：LocalStorage 持久化
+- **后端**：Express.js (可选)
+
+## 安装和使用
+
+### 开发环境
+1. **克隆仓库**
+   ```bash
+   git clone https://github.com/dch520438/smart-learning-system.git
+   cd smart-learning-system
+   ```
+
+2. **安装依赖**
+   ```bash
+   npm install
+   ```
+
+3. **启动开发服务器**
+   ```bash
+   npm run dev
+   ```
+
+4. **访问应用**
+   在浏览器中打开 `http://localhost:5174`
+
+### 生产环境
+1. **构建项目**
+   ```bash
+   npm run build
+   ```
+
+2. **部署**
+   - 将 `dist` 目录部署到任何静态网站服务器
+   - 或使用 `npm run preview` 预览生产版本
+
+### PWA 安装
+- **Windows**：在 Chrome 或 Edge 浏览器中打开应用，点击地址栏右侧的 "安装" 按钮
+- **安卓**：在 Chrome 浏览器中打开应用，点击菜单按钮，选择 "添加到主屏幕"
+- **麒麟系统**：在支持 PWA 的浏览器中打开应用，按照浏览器提示安装到桌面
+
+## 项目结构
+
+```
+smart-learning-system/
+├── public/            # 静态资源
+├── src/               # 源代码
+│   ├── components/    # 组件
+│   ├── pages/         # 页面
+│   ├── store/         # 状态管理
+│   ├── types/         # 类型定义
+│   ├── hooks/         # 自定义钩子
+│   ├── lib/           # 工具库
+│   └── assets/        # 资源文件
+├── api/               # 后端 API
+├── dist/              # 构建输出
+└── package.json       # 项目配置
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## 主要页面
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+- **首页**：选择学科和功能模块
+- **知识归纳**：管理知识点
+- **必背必记**：管理需要记忆的内容
+- **学习笔记**：记录和管理笔记
+- **错题整理**：查看和管理错题
+- **母题整理**：管理母题
+- **模拟测试**：进行模拟考试
+- **分数历史**：查看分数趋势
+- **学习分析**：分析学习情况
+- **思维导图**：查看知识结构
 
-export default tseslint.config({
-  extends: [
-    // other configs...
-    // Enable lint rules for React
-    reactX.configs['recommended-typescript'],
-    // Enable lint rules for React DOM
-    reactDom.configs.recommended,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
-```
+## 数据持久化
+
+应用使用 LocalStorage 进行数据持久化，所有数据存储在浏览器本地，无需后端服务即可使用。如果需要后端服务，可以启用 `api` 目录中的 Express.js 服务器。
+
+## 浏览器支持
+
+- Chrome (最新版本)
+- Edge (最新版本)
+- Firefox (最新版本)
+- Safari (最新版本)
+
+## 许可证
+
+MIT
+
+## 贡献
+
+欢迎贡献代码和提出建议！
+
+## 联系方式
+
+如有问题或建议，请联系项目维护者。
