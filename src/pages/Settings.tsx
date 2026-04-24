@@ -6,7 +6,14 @@ type ThemeMode = 'light' | 'dark' | 'system';
 type BackgroundColor = 'default' | 'blue' | 'green' | 'purple' | 'orange';
 
 export function Settings() {
-  const { subjects, knowledgePoints, notes, questions, memorizeItems, testRecords, papers, setSubjects, setKnowledgePoints, setNotes, setQuestions, setMemorizeItems, setTestRecords, setPapers } = useAppStore();
+  const { currentUser, users, updateUser, deleteUser, subjects, knowledgePoints, notes, questions, memorizeItems, testRecords, papers, setSubjects, setKnowledgePoints, setNotes, setQuestions, setMemorizeItems, setTestRecords, setPapers } = useAppStore();
+  
+  // 账号编辑相关状态
+  const [showEditAccountModal, setShowEditAccountModal] = useState(false);
+  const [editUsername, setEditUsername] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [editPassword, setEditPassword] = useState('');
+  const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
   
   const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
     const saved = localStorage.getItem('themeMode');
@@ -170,6 +177,43 @@ export function Settings() {
     };
     reader.readAsText(file);
   };
+  
+  // 账号管理相关函数
+  const handleEditAccount = () => {
+    if (!currentUser) return;
+    setEditUsername(currentUser.username);
+    setEditEmail(currentUser.email);
+    setEditPassword('');
+    setShowEditAccountModal(true);
+  };
+  
+  const handleUpdateAccount = () => {
+    if (!currentUser) return;
+    
+    const userData: Partial<Record<string, any>> = {};
+    if (editUsername) userData.username = editUsername;
+    if (editEmail) userData.email = editEmail;
+    if (editPassword) userData.password = editPassword;
+    
+    const success = updateUser(currentUser.id, userData);
+    if (success) {
+      showSuccess('账号信息更新成功！');
+      setShowEditAccountModal(false);
+    } else {
+      alert('邮箱已被其他用户使用！');
+    }
+  };
+  
+  const handleDeleteAccount = () => {
+    setShowDeleteAccountModal(true);
+  };
+  
+  const confirmDeleteAccount = () => {
+    if (!currentUser) return;
+    deleteUser(currentUser.id);
+    showSuccess('账号已删除！');
+    setShowDeleteAccountModal(false);
+  };
 
   const backgroundColorOptions = [
     { value: 'default', label: '默认', color: 'bg-gray-50' },
@@ -187,6 +231,52 @@ export function Settings() {
           <p className="text-gray-600">个性化设置和数据管理</p>
         </div>
 
+        {/* 账号管理 */}
+        <div className="bg-white rounded-2xl p-6 shadow-lg mb-8">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+            <Icon name="user" size={24} className="mr-2 text-indigo-500" />
+            账号管理
+          </h2>
+          
+          {currentUser && (
+            <div className="space-y-4">
+              {/* 当前账号信息 */}
+              <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-xl">
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-green-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-medium text-lg">
+                    {currentUser.username.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">{currentUser.username}</h3>
+                  <p className="text-gray-600">{currentUser.email}</p>
+                  <p className="text-sm text-gray-500">
+                    注册时间：{new Date(currentUser.createdAt).toLocaleDateString('zh-CN')}
+                  </p>
+                </div>
+              </div>
+              
+              {/* 操作按钮 */}
+              <div className="grid md:grid-cols-2 gap-4">
+                <button
+                  onClick={handleEditAccount}
+                  className="px-4 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors flex items-center justify-center space-x-2"
+                >
+                  <Icon name="edit" size={18} />
+                  <span>编辑账号</span>
+                </button>
+                <button
+                  onClick={handleDeleteAccount}
+                  className="px-4 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors flex items-center justify-center space-x-2"
+                >
+                  <Icon name="trash2" size={18} />
+                  <span>注销账号</span>
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+        
         {/* 主题设置 */}
         <div className="bg-white rounded-2xl p-6 shadow-lg mb-8">
           <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
@@ -359,6 +449,108 @@ export function Settings() {
                   className="flex-1 px-6 py-3 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition-colors"
                 >
                   确认
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* 编辑账号模态框 */}
+      {showEditAccountModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-semibold text-gray-900">编辑账号</h3>
+                <button
+                  onClick={() => setShowEditAccountModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <Icon name="x" size={24} />
+                </button>
+              </div>
+              
+              <form className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">用户名</label>
+                  <input
+                    type="text"
+                    value={editUsername}
+                    onChange={(e) => setEditUsername(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">邮箱</label>
+                  <input
+                    type="email"
+                    value={editEmail}
+                    onChange={(e) => setEditEmail(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">密码（留空则不修改）</label>
+                  <input
+                    type="password"
+                    value={editPassword}
+                    onChange={(e) => setEditPassword(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="新密码"
+                  />
+                </div>
+                
+                <div className="flex space-x-4 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowEditAccountModal(false)}
+                    className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                  >
+                    取消
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleUpdateAccount}
+                    className="flex-1 px-6 py-3 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors"
+                  >
+                    保存
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* 删除账号确认模态框 */}
+      {showDeleteAccountModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full">
+            <div className="p-6">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-red-100 rounded-full mx-auto flex items-center justify-center mb-4">
+                  <Icon name="alert-triangle" size={32} className="text-red-500" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">注销账号</h3>
+                <p className="text-gray-600 mb-4">
+                  确定要注销此账号吗？此操作将删除该账号下的所有数据，且不可恢复！
+                </p>
+              </div>
+              <div className="flex space-x-4">
+                <button
+                  onClick={() => setShowDeleteAccountModal(false)}
+                  className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                >
+                  取消
+                </button>
+                <button
+                  onClick={confirmDeleteAccount}
+                  className="flex-1 px-6 py-3 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition-colors"
+                >
+                  确认注销
                 </button>
               </div>
             </div>

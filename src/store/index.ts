@@ -12,6 +12,8 @@ interface AppState {
   register: (username: string, email: string, password: string) => boolean;
   logout: () => void;
   switchUser: (userId: string) => void;
+  updateUser: (userId: string, userData: Partial<User>) => boolean;
+  deleteUser: (userId: string) => boolean;
   
   // 应用状态
   currentLevel: Level;
@@ -110,6 +112,62 @@ export const useAppStore = create<AppState>()(
         if (user) {
           set({ currentUser: user });
         }
+      },
+      
+      updateUser: (userId, userData) => {
+        const { users, currentUser } = get();
+        // 检查邮箱是否已被其他用户使用
+        if (userData.email && users.some(u => u.id !== userId && u.email === userData.email)) {
+          return false;
+        }
+        // 更新用户
+        const updatedUsers = users.map(user => 
+          user.id === userId ? { ...user, ...userData } : user
+        );
+        // 如果更新的是当前用户，也更新currentUser
+        const updatedCurrentUser = currentUser?.id === userId 
+          ? { ...currentUser, ...userData }
+          : currentUser;
+        set({ users: updatedUsers, currentUser: updatedCurrentUser });
+        return true;
+      },
+      
+      deleteUser: (userId) => {
+        const { users, currentUser, subjects, knowledgePoints, questions, notes, 
+                testRecords, studyRecords, memorizeItems, papers, studyAnalyses } = get();
+        // 删除该用户的所有数据
+        const filteredUsers = users.filter(u => u.id !== userId);
+        const filteredSubjects = subjects.filter(s => s.userId !== userId);
+        const filteredKnowledgePoints = knowledgePoints.filter(kp => kp.userId !== userId);
+        const filteredQuestions = questions.filter(q => q.userId !== userId);
+        const filteredNotes = notes.filter(n => n.userId !== userId);
+        const filteredTestRecords = testRecords.filter(t => t.userId !== userId);
+        const filteredStudyRecords = studyRecords.filter(s => s.userId !== userId);
+        const filteredMemorizeItems = memorizeItems.filter(m => m.userId !== userId);
+        const filteredPapers = papers.filter(p => p.userId !== userId);
+        const filteredStudyAnalyses = studyAnalyses.filter(a => a.userId !== userId);
+        
+        // 如果删除的是当前用户，需要登出
+        const updatedState: Partial<AppState> = {
+          users: filteredUsers,
+          subjects: filteredSubjects,
+          knowledgePoints: filteredKnowledgePoints,
+          questions: filteredQuestions,
+          notes: filteredNotes,
+          testRecords: filteredTestRecords,
+          studyRecords: filteredStudyRecords,
+          memorizeItems: filteredMemorizeItems,
+          papers: filteredPapers,
+          studyAnalyses: filteredStudyAnalyses
+        };
+        
+        if (currentUser?.id === userId) {
+          updatedState.isAuthenticated = false;
+          updatedState.currentUser = null;
+        }
+        
+        set(updatedState as AppState);
+        return true;
       },
       
       // 应用状态
