@@ -1,0 +1,378 @@
+import React, { useState, useEffect } from 'react';
+import { Icon } from '../components/Icons';
+import { useAppStore } from '../store';
+
+type ThemeMode = 'light' | 'dark' | 'system';
+type BackgroundColor = 'default' | 'blue' | 'green' | 'purple' | 'orange';
+
+export function Settings() {
+  const { subjects, knowledgePoints, notes, questions, memorizeItems, testRecords, papers, setSubjects, setKnowledgePoints, setNotes, setQuestions, setMemorizeItems, setTestRecords, setPapers } = useAppStore();
+  
+  const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
+    const saved = localStorage.getItem('themeMode');
+    return (saved as ThemeMode) || 'system';
+  });
+  
+  const [backgroundColor, setBackgroundColor] = useState<BackgroundColor>(() => {
+    const saved = localStorage.getItem('backgroundColor');
+    return (saved as BackgroundColor) || 'default';
+  });
+  
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<string | null>(null);
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+
+  useEffect(() => {
+    applyTheme();
+  }, [themeMode, backgroundColor]);
+
+  const applyTheme = () => {
+    // 应用主题模式
+    const isDark = themeMode === 'dark' || (themeMode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    document.documentElement.classList.toggle('dark', isDark);
+    
+    // 应用背景颜色
+    document.documentElement.classList.remove('bg-blue', 'bg-green', 'bg-purple', 'bg-orange');
+    if (backgroundColor !== 'default') {
+      document.documentElement.classList.add(`bg-${backgroundColor}`);
+    }
+    
+    // 保存设置
+    localStorage.setItem('themeMode', themeMode);
+    localStorage.setItem('backgroundColor', backgroundColor);
+  };
+
+  const handleThemeChange = (mode: ThemeMode) => {
+    setThemeMode(mode);
+  };
+
+  const handleBackgroundColorChange = (color: BackgroundColor) => {
+    setBackgroundColor(color);
+  };
+
+  const showSuccess = (message: string) => {
+    setSuccessMessage(message);
+    setShowSuccessToast(true);
+    setTimeout(() => setShowSuccessToast(false), 3000);
+  };
+
+  const handleBackupData = () => {
+    const data = {
+      subjects,
+      knowledgePoints,
+      notes,
+      questions,
+      memorizeItems,
+      testRecords,
+      papers,
+      timestamp: new Date().toISOString()
+    };
+    
+    const dataStr = JSON.stringify(data, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `smart-learning-backup-${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+    
+    showSuccess('数据备份成功！');
+  };
+
+  const handleRestoreData = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target?.result as string);
+        if (data.subjects) setSubjects(data.subjects);
+        if (data.knowledgePoints) setKnowledgePoints(data.knowledgePoints);
+        if (data.notes) setNotes(data.notes);
+        if (data.questions) setQuestions(data.questions);
+        if (data.memorizeItems) setMemorizeItems(data.memorizeItems);
+        if (data.testRecords) setTestRecords(data.testRecords);
+        if (data.papers) setPapers(data.papers);
+        showSuccess('数据恢复成功！');
+      } catch (error) {
+        alert('数据恢复失败，请检查文件格式！');
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const handleClearData = () => {
+    setConfirmAction('clear');
+    setShowConfirmModal(true);
+  };
+
+  const handleConfirmAction = () => {
+    if (confirmAction === 'clear') {
+      setSubjects([]);
+      setKnowledgePoints([]);
+      setNotes([]);
+      setQuestions([]);
+      setMemorizeItems([]);
+      setTestRecords([]);
+      setPapers([]);
+      showSuccess('数据已清空！');
+    }
+    setShowConfirmModal(false);
+    setConfirmAction(null);
+  };
+
+  const handleExportData = () => {
+    const data = {
+      subjects,
+      knowledgePoints,
+      notes,
+      questions,
+      memorizeItems,
+      testRecords,
+      papers,
+      exportDate: new Date().toISOString()
+    };
+    
+    const dataStr = JSON.stringify(data, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `smart-learning-export-${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+    
+    showSuccess('数据导出成功！');
+  };
+
+  const handleImportData = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target?.result as string);
+        if (data.subjects) setSubjects(data.subjects);
+        if (data.knowledgePoints) setKnowledgePoints(data.knowledgePoints);
+        if (data.notes) setNotes(data.notes);
+        if (data.questions) setQuestions(data.questions);
+        if (data.memorizeItems) setMemorizeItems(data.memorizeItems);
+        if (data.testRecords) setTestRecords(data.testRecords);
+        if (data.papers) setPapers(data.papers);
+        showSuccess('数据导入成功！');
+      } catch (error) {
+        alert('数据导入失败，请检查文件格式！');
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const backgroundColorOptions = [
+    { value: 'default', label: '默认', color: 'bg-gray-50' },
+    { value: 'blue', label: '蓝色', color: 'bg-blue-50' },
+    { value: 'green', label: '绿色', color: 'bg-green-50' },
+    { value: 'purple', label: '紫色', color: 'bg-purple-50' },
+    { value: 'orange', label: '橙色', color: 'bg-orange-50' },
+  ];
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-indigo-50">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">设置</h1>
+          <p className="text-gray-600">个性化设置和数据管理</p>
+        </div>
+
+        {/* 主题设置 */}
+        <div className="bg-white rounded-2xl p-6 shadow-lg mb-8">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+            <Icon name="settings" size={24} className="mr-2 text-indigo-500" />
+            主题设置
+          </h2>
+
+          <div className="space-y-6">
+            {/* 主题模式 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">主题模式</label>
+              <div className="flex flex-wrap gap-3">
+                <button
+                  onClick={() => handleThemeChange('light')}
+                  className={`px-4 py-2 rounded-lg border transition-all duration-200 flex items-center space-x-2 ${
+                    themeMode === 'light'
+                      ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                      : 'border-gray-300 hover:border-indigo-300 hover:bg-gray-50'
+                  }`}
+                >
+                  <Icon name="sun" size={18} />
+                  <span>浅色模式</span>
+                </button>
+                <button
+                  onClick={() => handleThemeChange('dark')}
+                  className={`px-4 py-2 rounded-lg border transition-all duration-200 flex items-center space-x-2 ${
+                    themeMode === 'dark'
+                      ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                      : 'border-gray-300 hover:border-indigo-300 hover:bg-gray-50'
+                  }`}
+                >
+                  <Icon name="moon" size={18} />
+                  <span>深色模式</span>
+                </button>
+                <button
+                  onClick={() => handleThemeChange('system')}
+                  className={`px-4 py-2 rounded-lg border transition-all duration-200 flex items-center space-x-2 ${
+                    themeMode === 'system'
+                      ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                      : 'border-gray-300 hover:border-indigo-300 hover:bg-gray-50'
+                  }`}
+                >
+                  <Icon name="laptop" size={18} />
+                  <span>跟随系统</span>
+                </button>
+              </div>
+            </div>
+
+            {/* 背景颜色 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">背景颜色</label>
+              <div className="grid grid-cols-5 gap-3">
+                {backgroundColorOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => handleBackgroundColorChange(option.value as BackgroundColor)}
+                    className={`aspect-square rounded-lg border-2 flex items-center justify-center transition-all duration-200 ${
+                      backgroundColor === option.value
+                        ? 'border-indigo-500 scale-110 shadow-md'
+                        : 'border-gray-300 hover:border-indigo-300 hover:scale-105'
+                    } ${option.color}`}
+                    title={option.label}
+                  >
+                    {backgroundColor === option.value && (
+                      <Icon name="check" size={24} className="text-indigo-500" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 数据管理 */}
+        <div className="bg-white rounded-2xl p-6 shadow-lg mb-8">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+            <Icon name="database" size={24} className="mr-2 text-indigo-500" />
+            数据管理
+          </h2>
+
+          <div className="space-y-4">
+            <div className="grid md:grid-cols-2 gap-4">
+              <button
+                onClick={handleBackupData}
+                className="px-4 py-3 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg transition-colors flex items-center space-x-2"
+              >
+                <Icon name="download" size={18} />
+                <span>备份数据</span>
+              </button>
+              <label className="px-4 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors flex items-center space-x-2 cursor-pointer">
+                <Icon name="upload" size={18} />
+                <span>恢复数据</span>
+                <input
+                  type="file"
+                  accept=".json"
+                  onChange={handleRestoreData}
+                  className="hidden"
+                />
+              </label>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-4">
+              <button
+                onClick={handleExportData}
+                className="px-4 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors flex items-center space-x-2"
+              >
+                <Icon name="file-json" size={18} />
+                <span>导出数据</span>
+              </button>
+              <label className="px-4 py-3 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors flex items-center space-x-2 cursor-pointer">
+                <Icon name="file-json" size={18} />
+                <span>导入数据</span>
+                <input
+                  type="file"
+                  accept=".json"
+                  onChange={handleImportData}
+                  className="hidden"
+                />
+              </label>
+            </div>
+
+            <button
+              onClick={handleClearData}
+              className="px-4 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors flex items-center space-x-2 w-full"
+            >
+              <Icon name="trash2" size={18} />
+              <span>清空所有数据</span>
+            </button>
+          </div>
+        </div>
+
+        {/* 关于 */}
+        <div className="bg-white rounded-2xl p-6 shadow-lg">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+            <Icon name="info" size={24} className="mr-2 text-indigo-500" />
+            关于
+          </h2>
+
+          <div className="space-y-3 text-gray-600">
+            <p>智慧学习整理系统 v1.0.0</p>
+            <p>全学科学习管理平台，支持小学、初中、高中、大学的所有学科</p>
+            <p className="text-sm text-gray-500">© 2026 智慧学习整理系统</p>
+          </div>
+        </div>
+      </div>
+
+      {/* 确认模态框 */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full">
+            <div className="p-6">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-red-100 rounded-full mx-auto flex items-center justify-center mb-4">
+                  <Icon name="alert-triangle" size={32} className="text-red-500" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">确认操作</h3>
+                <p className="text-gray-600">
+                  {confirmAction === 'clear' && '确定要清空所有数据吗？此操作不可恢复！'}
+                </p>
+              </div>
+              <div className="flex space-x-4">
+                <button
+                  onClick={() => setShowConfirmModal(false)}
+                  className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                >
+                  取消
+                </button>
+                <button
+                  onClick={handleConfirmAction}
+                  className="flex-1 px-6 py-3 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition-colors"
+                >
+                  确认
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 成功提示 */}
+      {showSuccessToast && (
+        <div className="fixed top-4 right-4 bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg z-50 flex items-center space-x-2">
+          <Icon name="check-circle" size={20} />
+          <span>{successMessage}</span>
+        </div>
+      )}
+    </div>
+  );
+}

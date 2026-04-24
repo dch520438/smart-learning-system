@@ -41,6 +41,15 @@ interface AppState {
   updateMemorizeItem: (id: string, item: Partial<MemorizeItem>) => void;
   deleteMemorizeItem: (id: string) => void;
   toggleMemorizeStatus: (id: string) => void;
+  
+  // 数据管理相关
+  setSubjects: (subjects: Subject[]) => void;
+  setKnowledgePoints: (knowledgePoints: KnowledgePoint[]) => void;
+  setNotes: (notes: Note[]) => void;
+  setQuestions: (questions: Question[]) => void;
+  setMemorizeItems: (memorizeItems: MemorizeItem[]) => void;
+  setTestRecords: (testRecords: TestRecord[]) => void;
+  setPapers: (papers: Paper[]) => void;
 }
 
 const initialSubjects: Subject[] = [
@@ -227,6 +236,15 @@ export const useAppStore = create<AppState>()(
           i.id === id ? { ...i, isMemorized: !i.isMemorized, updatedAt: new Date() } : i
         )
       })),
+      
+      // 数据管理相关
+      setSubjects: (subjects) => set({ subjects }),
+      setKnowledgePoints: (knowledgePoints) => set({ knowledgePoints }),
+      setNotes: (notes) => set({ notes }),
+      setQuestions: (questions) => set({ questions }),
+      setMemorizeItems: (memorizeItems) => set({ memorizeItems }),
+      setTestRecords: (testRecords) => set({ testRecords }),
+      setPapers: (papers) => set({ papers }),
     }),
     {
       name: 'study-app-storage',
