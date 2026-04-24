@@ -20,6 +20,8 @@ export function Knowledge() {
   const [filterTag, setFilterTag] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<'latest' | 'oldest' | 'title'>('latest');
   const [showMode, setShowMode] = useState<'card' | 'list'>('card');
+  const [selectedKnowledge, setSelectedKnowledge] = useState<KnowledgePoint | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
 
   if (!currentSubject) {
     navigate('/');
@@ -123,6 +125,11 @@ export function Knowledge() {
     });
   };
 
+  const handleKnowledgeClick = (kp: KnowledgePoint) => {
+    setSelectedKnowledge(kp);
+    setShowDetailModal(true);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -217,7 +224,11 @@ export function Knowledge() {
         ) : showMode === 'card' ? (
           <div className="grid gap-6">
             {filteredAndSortedKnowledge.map((kp) => (
-              <div key={kp.id} className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-blue-200">
+              <div 
+                key={kp.id} 
+                className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-blue-200 cursor-pointer"
+                onClick={() => handleKnowledgeClick(kp)}
+              >
                 <div className="flex flex-col md:flex-row md:items-start justify-between space-y-4 md:space-y-0">
                   <div className="flex-1">
                     <div className="flex items-center space-x-2 mb-3">
@@ -249,7 +260,10 @@ export function Knowledge() {
                         {kp.tags.map((tag, index) => (
                           <span
                             key={index}
-                            onClick={() => setFilterTag(tag)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setFilterTag(tag);
+                            }}
                             className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm cursor-pointer hover:bg-blue-200 transition-colors"
                           >
                             {tag}
@@ -260,14 +274,20 @@ export function Knowledge() {
                   </div>
                   <div className="flex flex-col items-center space-y-2 ml-0 md:ml-4 pt-2 md:pt-0">
                     <button
-                      onClick={() => handleEdit(kp)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEdit(kp);
+                      }}
                       className="p-2 text-gray-500 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
                       title="编辑"
                     >
                       <Icon name="edit" size={20} />
                     </button>
                     <button
-                      onClick={() => handleDelete(kp.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(kp.id);
+                      }}
                       className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                       title="删除"
                     >
@@ -281,7 +301,11 @@ export function Knowledge() {
         ) : (
           <div className="space-y-4">
             {filteredAndSortedKnowledge.map((kp) => (
-              <div key={kp.id} className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 hover:border-blue-200">
+              <div 
+                key={kp.id} 
+                className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 hover:border-blue-200 cursor-pointer"
+                onClick={() => handleKnowledgeClick(kp)}
+              >
                 <div className="flex items-start space-x-4">
                   <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
                     <Icon name="book-open-check" size={24} className="text-blue-600" />
@@ -305,7 +329,10 @@ export function Knowledge() {
                           {kp.tags.map((tag, index) => (
                             <span
                               key={index}
-                              onClick={() => setFilterTag(tag)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setFilterTag(tag);
+                              }}
                               className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm cursor-pointer hover:bg-blue-200 transition-colors"
                             >
                               {tag}
@@ -317,14 +344,20 @@ export function Knowledge() {
                   </div>
                   <div className="flex flex-col items-center space-y-2 ml-4 pt-2">
                     <button
-                      onClick={() => handleEdit(kp)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEdit(kp);
+                      }}
                       className="p-2 text-gray-500 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
                       title="编辑"
                     >
                       <Icon name="edit" size={18} />
                     </button>
                     <button
-                      onClick={() => handleDelete(kp.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(kp.id);
+                      }}
                       className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                       title="删除"
                     >
@@ -464,6 +497,101 @@ export function Knowledge() {
                     </button>
                   </div>
                 </form>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 知识点详情模态框 */}
+        {showDetailModal && selectedKnowledge && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900">知识点详情</h2>
+                  <button
+                    onClick={() => setShowDetailModal(false)}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <Icon name="x" size={24} />
+                  </button>
+                </div>
+
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">{selectedKnowledge.title}</h3>
+                    <p className="text-sm text-gray-500">
+                      更新时间：{new Date(selectedKnowledge.updatedAt).toLocaleString('zh-CN')}
+                    </p>
+                  </div>
+
+                  <div className="prose max-w-none">
+                    <div dangerouslySetInnerHTML={{ __html: selectedKnowledge.content }} />
+                  </div>
+
+                  {selectedKnowledge.images && selectedKnowledge.images.length > 0 && (
+                    <div>
+                      <h4 className="text-lg font-medium text-gray-900 mb-3">图片</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {selectedKnowledge.images.map((image, index) => (
+                          <div key={index} className="relative">
+                            <img
+                              src={image}
+                              alt={`图片 ${index + 1}`}
+                              className="w-full h-auto max-h-96 object-contain rounded-lg"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedKnowledge.tags.length > 0 && (
+                    <div>
+                      <h4 className="text-lg font-medium text-gray-900 mb-3">标签</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedKnowledge.tags.map((tag, index) => (
+                          <span
+                            key={index}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setFilterTag(tag);
+                              setShowDetailModal(false);
+                            }}
+                            className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm cursor-pointer hover:bg-blue-200 transition-colors"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex justify-end space-x-4 pt-4 border-t border-gray-200">
+                    <button
+                      onClick={() => {
+                        setShowDetailModal(false);
+                        handleEdit(selectedKnowledge);
+                      }}
+                      className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors flex items-center space-x-2"
+                    >
+                      <Icon name="edit" size={18} />
+                      <span>编辑</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowDetailModal(false);
+                        if (confirm('确定要删除这个知识点吗？')) {
+                          deleteKnowledgePoint(selectedKnowledge.id);
+                        }
+                      }}
+                      className="px-6 py-2 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition-colors flex items-center space-x-2"
+                    >
+                      <Icon name="trash2" size={18} />
+                      <span>删除</span>
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

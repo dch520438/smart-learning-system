@@ -1,18 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icons';
 import { useAppStore } from '../store';
 
 export function AuthPage() {
   const navigate = useNavigate();
-  const { login, register } = useAppStore();
+  const { login, register, users } = useAppStore();
   
   const [isLogin, setIsLogin] = useState(true);
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [selectedUser, setSelectedUser] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  // 当切换到登录模式时，清空表单
+  useEffect(() => {
+    if (isLogin) {
+      setUsername('');
+      setEmail('');
+      setPassword('');
+      setSelectedUser('');
+    }
+  }, [isLogin]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,24 +32,39 @@ export function AuthPage() {
 
     if (isLogin) {
       // 登录逻辑
-      if (!email || !password) {
-        setError('请输入邮箱和密码');
-        return;
-      }
-      
-      const success = login(email, password);
-      if (success) {
-        navigate('/');
+      if (selectedUser) {
+        // 通过选择的用户名登录
+        const user = users.find(u => u.username === selectedUser);
+        if (user) {
+          // 直接登录，不需要密码
+          login(user.email, '');
+          navigate('/');
+        } else {
+          setError('用户不存在');
+        }
       } else {
-        setError('邮箱或密码错误');
+        // 常规登录
+        if (!email) {
+          setError('请输入邮箱');
+          return;
+        }
+        
+        // 允许空密码登录
+        const success = login(email, password);
+        if (success) {
+          navigate('/');
+        } else {
+          setError('邮箱或密码错误');
+        }
       }
     } else {
       // 注册逻辑
-      if (!username || !email || !password) {
-        setError('请填写所有字段');
+      if (!username || !email) {
+        setError('请填写用户名和邮箱');
         return;
       }
       
+      // 允许空密码注册
       const success = register(username, email, password);
       if (success) {
         setSuccess('注册成功，正在登录...');
@@ -48,6 +74,14 @@ export function AuthPage() {
       } else {
         setError('邮箱已被注册');
       }
+    }
+  };
+
+  const handleUserSelect = (username: string) => {
+    setSelectedUser(username);
+    const user = users.find(u => u.username === username);
+    if (user) {
+      setEmail(user.email);
     }
   };
 
@@ -82,6 +116,30 @@ export function AuthPage() {
           </div>
         )}
 
+        {isLogin && users.length > 0 && (
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">选择已有用户</label>
+            <div className="space-y-2">
+              {users.map((user) => (
+                <button
+                  key={user.id}
+                  onClick={() => handleUserSelect(user.username)}
+                  className={`w-full text-left px-4 py-2 rounded-lg border transition-colors ${selectedUser === user.username ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:bg-gray-50'}`}
+                >
+                  <div className="flex items-center space-x-2">
+                    <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-green-500 rounded-full flex items-center justify-center">
+                      <span className="text-white text-sm font-medium">
+                        {user.username.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                    <span>{user.username}</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4">
           {!isLogin && (
             <div>
@@ -108,13 +166,13 @@ export function AuthPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">密码</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">密码（可选）</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="请输入密码"
+              placeholder="不设置密码则直接登录"
             />
           </div>
 
