@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generate PWA Icons</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .icon-preview {
+            margin: 20px 0;
+        }
+        .icon {  
+            border: 1px solid #ddd;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>PWA 图标生成</h1>
+    <p>请使用以下 URL 生成 PWA 图标：</p>
+    <ul>
+        <li>192x192: <a href="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=education%20app%20icon%20with%20brain%20symbol%20and%20blue%20color%20scheme&image_size=square" target="_blank">生成 192x192 图标</a></li>
+        <li>512x512: <a href="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=education%20app%20icon%20with%20brain%20symbol%20and%20blue%20color%20scheme&image_size=square_hd" target="_blank">生成 512x512 图标</a></li>
+    </ul>
+    <div class="icon-preview">
+        <h3>图标预览</h3>
+        <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=education%20app%20icon%20with%20brain%20symbol%20and%20blue%20color%20scheme&image_size=square" alt="192x192 Icon" class="icon" width="192" height="192">
+        <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=education%20app%20icon%20with%20brain%20symbol%20and%20blue%20color%20scheme&image_size=square_hd" alt="512x512 Icon" class="icon" width="256" height="256">
+    </div>
+    <p>生成图标后，请将它们保存为以下文件名：</p>
+    <ul>
+        <li>192x192: pwa-192x192.png</li>
+        <li>512x512: pwa-512x512.png</li>
+    </ul>
+    <p>并将它们放在 public 目录中。</p>
+</body>
+</html>
