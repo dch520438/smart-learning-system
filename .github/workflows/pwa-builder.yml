@@ -1,30 +1,28 @@
 name: PWA Builder Package
 on:
-  # 仅手动触发，避免每次代码提交自动运行
+  # 仅手动触发，避免自动运行
   workflow_dispatch:
 
 jobs:
   build-pwa:
     runs-on: ubuntu-latest
     steps:
-      # 步骤1：配置兼容的Node.js LTS版本，解决弃用警告
+      # 配置兼容的Node.js LTS版本
       - name: Setup Node.js 24 LTS
         uses: actions/setup-node@v4
         with:
           node-version: 24.x
           check-latest: true
 
-      # 步骤2：直接用npx执行PWA打包，彻底解决命令找不到的问题
-      # npx会自动下载并执行对应版本的CLI，无需全局安装和配置PATH
+      # 使用官方正确的pwabuilder包执行打包，彻底解决参数不识别问题
       - name: Build PWA Packages
         run: |
-          npx @pwabuilder/cli@latest build \
-            --url "https://dch520438.github.io/smart-learning-system/" \
+          npx pwabuilder@latest build \
+            "https://dch520438.github.io/smart-learning-system/" \
             --platforms windows,android \
-            --output ./pwabuilder \
-            --no-cache
+            --output ./pwabuilder
 
-      # 步骤3：上传打包产物（无论打包是否成功，都会上传文件，方便排查问题）
+      # 上传打包产物（无论是否成功都上传，方便排查）
       - name: Upload PWA Build Result
         if: always()
         uses: actions/upload-artifact@v4
