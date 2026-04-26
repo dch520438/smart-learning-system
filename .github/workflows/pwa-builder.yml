@@ -1,0 +1,33 @@
+name: PWA Builder Package
+
+on:
+  # 手动触发打包
+  workflow_dispatch:
+  # 可选：推送到 main 分支时自动打包
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run PWA Builder
+        uses: pwa-builder/pwabuilder-action@v2
+        with:
+          # 你的 PWA 站点地址（必须是 HTTPS）
+          siteUrl: "https://dch520438.github.io/smart-learning-system/"
+          # 要生成的平台包（可选：windows, android, apple, all）
+          platforms: "all"
+
+      - name: Upload packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: pwa-packages
+          path: |
+            ./pwabuilder/*.zip
+            ./pwabuilder/*.appx
+            ./pwabuilder/*.apk
+            ./pwabuilder/*.ipa
