@@ -6,6 +6,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: '/smart-learning-system/',
   plugins: [
     react({
       babel: {
@@ -33,10 +34,10 @@ export default defineConfig({
         description: '全学科学习整理与错题管理平台',
         theme_color: '#3B82F6',
         background_color: '#ffffff',
-        start_url: '/',
+        start_url: '/smart-learning-system/',
         display: 'standalone',
         lang: 'zh-CN',
-        scope: '/',
+        scope: '/smart-learning-system/',
         icons: [
           {
             src: 'pwa-192x192.svg',
