@@ -136,30 +136,64 @@ export function Memorize() {
     
     // 为填空模式准备数据
     if (testMode === 'fill') {
-      // 简单的填空生成逻辑：将内容按句子分割，随机选择部分作为填空
       const content = item.content.replace(/<[^>]*>/g, ''); // 移除HTML标签
-      const sentences = content.split(/[。！？.!?]/).filter(s => s.trim());
       const blanks: string[] = [];
-      const answers: string[] = [];
+      const correctAnswers: string[] = [];
       
-      sentences.forEach((sentence, index) => {
-        if (index % 2 === 0 && sentence.length > 5) {
-          // 将句子的中间部分作为填空
-          const mid = Math.floor(sentence.length / 2);
-          const blankStart = Math.max(0, mid - 2);
-          const blankEnd = Math.min(sentence.length, mid + 2);
-          const answer = sentence.substring(blankStart, blankEnd);
-          const blankSentence = sentence.substring(0, blankStart) + '_____' + sentence.substring(blankEnd);
-          blanks.push(blankSentence);
-          answers.push(answer);
+      // 按标点符号分割句子，但保留标点符号
+      const punctuationRegex = /([。！？.!?，；,;])/g;
+      const parts = content.split(punctuationRegex);
+      
+      parts.forEach((part, index) => {
+        if (!punctuationRegex.test(part) && part.trim().length > 3) {
+          const sentence = part.trim();
+          
+          // 中文分词（简单实现，按常用词分割）
+          const commonWords = [
+            '的', '了', '在', '是', '我', '有', '和', '就', '不', '人', '都', '一',
+            '一个', '上', '也', '很', '到', '说', '要', '去', '你', '会', '着', '没有',
+            '看', '好', '自己', '这', '那', '我们', '他们', '什么', '怎么', '为什么',
+            '因为', '所以', '但是', '如果', '或者', '虽然', '然后', '还是', '只是',
+            '已经', '正在', '还是', '不是', '而是', '就是', '只有', '只要', '除非'
+          ];
+          
+          let processed = sentence;
+          const foundWords: Array<{ word: string; index: number }> = [];
+          
+          // 找出句子中的常用词
+          commonWords.forEach(word => {
+            const regex = new RegExp(word, 'g');
+            let match;
+            while ((match = regex.exec(sentence)) !== null) {
+              foundWords.push({ word, index: match.index });
+            }
+          });
+          
+          if (foundWords.length > 0) {
+            // 随机选择一个词作为填空
+            const randomIndex = Math.floor(Math.random() * foundWords.length);
+            const selectedWord = foundWords[randomIndex].word;
+            const selectedIndex = foundWords[randomIndex].index;
+            
+            // 构建填空句子
+            const before = sentence.substring(0, selectedIndex);
+            const after = sentence.substring(selectedIndex + selectedWord.length);
+            blanks.push(before + '_____' + after);
+            correctAnswers.push(selectedWord);
+          } else {
+            blanks.push(sentence);
+            correctAnswers.push('');
+          }
         } else {
-          blanks.push(sentence);
-          answers.push('');
+          blanks.push(part);
+          correctAnswers.push('');
         }
       });
       
       setFillBlanks(blanks);
       setFillAnswers(new Array(blanks.length).fill(''));
+      // 保存正确答案用于后续评分
+      (window as any).currentCorrectAnswers = correctAnswers;
     }
     
     setIsTesting(true);
@@ -169,65 +203,115 @@ export function Memorize() {
     if (testItem) {
       if (testMode === 'fill') {
         // 填空模式评分
-        const content = testItem.content.replace(/<[^>]*>/g, '');
-        const sentences = content.split(/[。！？.!?]/).filter(s => s.trim());
+        const correctAnswers = (window as any).currentCorrectAnswers || [];
         let correctCount = 0;
         let totalBlanks = 0;
         
-        sentences.forEach((sentence, index) => {
-          if (index % 2 === 0 && sentence.length > 5) {
+        fillBlanks.forEach((blank, index) => {
+          if (blank.includes('_____')) {
             totalBlanks++;
-            const mid = Math.floor(sentence.length / 2);
-            const blankStart = Math.max(0, mid - 2);
-            const blankEnd = Math.min(sentence.length, mid + 2);
-            const correctAnswer = sentence.substring(blankStart, blankEnd);
+            const correctAnswer = correctAnswers[index] || '';
             const userAnswer = fillAnswers[index] || '';
             
-            if (userAnswer.toLowerCase().includes(correctAnswer.toLowerCase())) {
-              correctCount++;
+            if (correctAnswer && userAnswer.trim()) {
+              // 使用更准确的匹配算法
+              const normalize = (str: string) => str.toLowerCase().replace(/\s+/g, '');
+              const normalizedCorrect = normalize(correctAnswer);
+              const normalizedUser = normalize(userAnswer);
+              
+              if (normalizedUser.includes(normalizedCorrect) || normalizedCorrect.includes(normalizedUser)) {
+                correctCount++;
+              } else {
+                // 计算字符串相似度
+                const similarity = calculateSimilarity(normalizedCorrect, normalizedUser);
+                if (similarity >= 0.6) {
+                  correctCount++;
+                }
+              }
             }
           }
         });
         
-        const similarity = totalBlanks > 0 ? correctCount / totalBlanks : 0;
-        const correct = similarity >= 0.8;
+        const similarity = totalBlanks > 0 ? Math.round((correctCount / totalBlanks) * 100) / 100 : 0;
+        const correct = similarity >= 0.7;
         setTestResult({ correct, similarity });
       } else {
         // 文字和语音模式评分
         const userAnswer = testAnswer;
         const originalAnswer = testItem.content;
         
-        // 简单的相似度计算：计算匹配的字符数
-        const userChars = userAnswer.toLowerCase().replace(/\s/g, '');
-        const originalChars = originalAnswer.toLowerCase().replace(/\s/g, '');
-        
-        let matchCount = 0;
-        for (let i = 0; i < Math.min(userChars.length, originalChars.length); i++) {
-          if (userChars[i] === originalChars[i]) {
-            matchCount++;
-          }
-        }
-        
-        // 相似度达到80%以上认为正确
-        const similarity = originalChars.length > 0 ? matchCount / originalChars.length : 0;
-        const correct = similarity >= 0.8;
+        // 计算文本相似度
+        const similarity = calculateSimilarity(userAnswer, originalAnswer);
+        const correct = similarity >= 0.7;
         
         setTestResult({ correct, similarity });
       }
     }
   };
+  
+  // 辅助函数：计算两个字符串的相似度
+  const calculateSimilarity = (str1: string, str2: string): number => {
+    if (!str1 || !str2) return 0;
+    
+    const normalize = (str: string) => str.toLowerCase().replace(/\s+/g, '').replace(/[^\u4e00-\u9fa5a-zA-Z0-9]/g, '');
+    const s1 = normalize(str1);
+    const s2 = normalize(str2);
+    
+    if (s1.length === 0 || s2.length === 0) return 0;
+    
+    // 使用Levenshtein距离计算相似度
+    const matrix: number[][] = [];
+    for (let i = 0; i <= s2.length; i++) {
+      matrix[i] = [];
+      for (let j = 0; j <= s1.length; j++) {
+        if (i === 0) matrix[i][j] = j;
+        else if (j === 0) matrix[i][j] = i;
+        else {
+          matrix[i][j] = Math.min(
+            matrix[i - 1][j] + 1,
+            matrix[i][j - 1] + 1,
+            matrix[i - 1][j - 1] + (s1[j - 1] === s2[i - 1] ? 0 : 1)
+          );
+        }
+      }
+    }
+    
+    const distance = matrix[s2.length][s1.length];
+    const maxLength = Math.max(s1.length, s2.length);
+    return 1 - (distance / maxLength);
+  };
 
   const handleVoiceRecognition = () => {
-    if ('webkitSpeechRecognition' in window) {
-      const recognition = new (window as any).webkitSpeechRecognition();
-      recognition.lang = 'zh-CN';
-      recognition.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        setTestAnswer(transcript);
-      };
-      recognition.start();
-    } else {
-      alert('您的浏览器不支持语音识别功能');
+    try {
+      // 检查浏览器支持
+      if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'zh-CN';
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        
+        recognition.onresult = (event: any) => {
+          const transcript = event.results[0][0].transcript;
+          setTestAnswer(transcript);
+        };
+        
+        recognition.onerror = (event: any) => {
+          console.error('语音识别错误:', event.error);
+          alert(`语音识别错误: ${event.error}，请确保您的浏览器支持语音识别功能，并已授予麦克风权限`);
+        };
+        
+        recognition.onend = () => {
+          console.log('语音识别结束');
+        };
+        
+        recognition.start();
+      } else {
+        alert('您的浏览器不支持语音识别功能，请尝试使用Chrome浏览器');
+      }
+    } catch (error) {
+      console.error('语音识别启动失败:', error);
+      alert('语音识别启动失败，请确保您的浏览器支持语音识别功能');
     }
   };
 
@@ -376,10 +460,23 @@ export function Memorize() {
                 <p className="text-gray-600 mb-6">尝试调整筛选条件或添加新的必背内容</p>
               </div>
             ) : showMode === 'card' ? (
-              <div className="grid gap-4">
-                {filteredAndSortedItems.map((item) => (
-                  <div key={item.id} className={`bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow ${item.isMemorized ? 'border-l-4 border-purple-500' : ''}`}>
-                    <div className="flex items-start justify-between">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredAndSortedItems.map((item, index) => (
+                  <div 
+                    key={item.id} 
+                    className={`
+                      aspect-square bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 
+                      transform hover:-translate-y-1
+                      ${item.isMemorized ? 'border-l-4 border-purple-500' : ''}
+                      relative overflow-hidden
+                    `}
+                    style={{
+                      // 添加堆叠效果的阴影层次
+                      zIndex: index,
+                      marginTop: index > 0 ? '-4px' : '0',
+                    }}
+                  >
+                    <div className="flex items-start justify-between h-full flex-col">
                       <div className="flex-1">
                         <div className="flex items-center space-x-3 mb-4">
                           <button
@@ -392,60 +489,65 @@ export function Memorize() {
                           >
                             <Icon name={item.isMemorized ? 'check-circle2' : 'circle'} size={20} />
                           </button>
-                          <h3 className={`text-xl font-semibold ${
+                          <h3 className={`text-lg font-semibold ${
                             item.isMemorized ? 'text-gray-500 line-through' : 'text-gray-900'
                           }`}>
                             {item.title}
                           </h3>
                         </div>
-                        <div className={`text-gray-700 mb-4 ${
+                        <div className={`text-gray-700 mb-4 line-clamp-4 ${
                           item.isMemorized ? 'line-through' : ''
                         }`} dangerouslySetInnerHTML={{ __html: item.content }} />
                         {item.images && item.images.length > 0 && (
-                          <div className="grid grid-cols-4 gap-2 mb-4">
-                            {item.images.map((image, index) => (
+                          <div className="grid grid-cols-2 gap-2 mb-4">
+                            {item.images.slice(0, 4).map((image, index) => (
                               <img
                                 key={index}
                                 src={image}
                                 alt={`图片 ${index + 1}`}
-                                className="w-full h-24 object-cover rounded-lg"
+                                className="w-full h-16 object-cover rounded-lg"
                               />
                             ))}
                           </div>
                         )}
                         {item.tags.length > 0 && (
                           <div className="flex flex-wrap gap-2">
-                            {item.tags.map((tag, index) => (
+                            {item.tags.slice(0, 3).map((tag, index) => (
                               <span
                                 key={index}
                                 onClick={() => setFilterTag(tag)}
-                                className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm cursor-pointer hover:bg-purple-200 transition-colors"
+                                className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs cursor-pointer hover:bg-purple-200 transition-colors"
                               >
                                 {tag}
                               </span>
                             ))}
+                            {item.tags.length > 3 && (
+                              <span className="px-2 py-1 bg-gray-100 text-gray-500 rounded-full text-xs">
+                                +{item.tags.length - 3}
+                              </span>
+                            )}
                           </div>
                         )}
                       </div>
-                      <div className="flex items-center space-x-2 ml-4">
+                      <div className="flex items-center justify-end space-x-2 pt-4 border-t border-gray-100">
                         <button
                           onClick={() => handleStartTest(item)}
                           className="p-2 text-gray-500 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
                           title="测试记忆"
                         >
-                          <Icon name="check-circle2" size={20} />
+                          <Icon name="check-circle2" size={16} />
                         </button>
                         <button
                           onClick={() => handleEdit(item)}
                           className="p-2 text-gray-500 hover:text-purple-500 hover:bg-purple-50 rounded-lg transition-colors"
                         >
-                          <Icon name="edit" size={20} />
+                          <Icon name="edit" size={16} />
                         </button>
                         <button
                           onClick={() => handleDelete(item.id)}
                           className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                         >
-                          <Icon name="trash2" size={20} />
+                          <Icon name="trash2" size={16} />
                         </button>
                       </div>
                     </div>

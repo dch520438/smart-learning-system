@@ -321,9 +321,11 @@ export function Scores() {
                       <input
                         type="number"
                         min="0"
+                        step="0.5"
                         value={formData.score}
-                        onChange={(e) => setFormData({ ...formData, score: parseInt(e.target.value) || 0 })}
+                        onChange={(e) => setFormData({ ...formData, score: parseFloat(e.target.value) || 0 })}
                         className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                        placeholder="输入得分"
                         required
                       />
                     </div>
@@ -332,9 +334,11 @@ export function Scores() {
                       <input
                         type="number"
                         min="1"
+                        step="0.5"
                         value={formData.totalScore}
-                        onChange={(e) => setFormData({ ...formData, totalScore: parseInt(e.target.value) || 1 })}
+                        onChange={(e) => setFormData({ ...formData, totalScore: parseFloat(e.target.value) || 1 })}
                         className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                        placeholder="输入总分"
                         required
                       />
                     </div>
@@ -356,9 +360,11 @@ export function Scores() {
                     <input
                       type="number"
                       min="1"
-                      value={Math.floor(formData.timeSpent / 60)}
-                      onChange={(e) => setFormData({ ...formData, timeSpent: parseInt(e.target.value) * 60 || 60 })}
+                      step="1"
+                      value={formData.timeSpent / 60}
+                      onChange={(e) => setFormData({ ...formData, timeSpent: (parseFloat(e.target.value) || 1) * 60 })}
                       className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      placeholder="输入用时（分钟）"
                       required
                     />
                   </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icons';
 
@@ -15,41 +15,25 @@ interface ScraperConfig {
 
 export function Scraper() {
   const navigate = useNavigate();
-  const [config, setConfig] = useState<ScraperConfig | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
-    try {
-      const response = await fetch('/api/scraper/sites');
-      const data = await response.json();
-      if (data.success) {
-        setConfig(data.data);
-      }
-    } catch (error) {
-      console.error('Error fetching scraper config:', error);
-    } finally {
-      setLoading(false);
-    }
+  
+  const config: ScraperConfig = {
+    knowledgeSites: [
+      { name: '百度百科', baseUrl: 'https://baike.baidu.com/' },
+      { name: '维基百科', baseUrl: 'https://zh.wikipedia.org/' },
+      { name: '豆包', baseUrl: 'https://www.doubao.com/' },
+      { name: '知乎', baseUrl: 'https://www.zhihu.com/' },
+    ],
+    questionSites: [
+      { name: '菁优网', baseUrl: 'https://www.jyeoo.com/' },
+      { name: '魔方格', baseUrl: 'https://www.mofangge.com/' },
+      { name: '学科网', baseUrl: 'https://www.zxxk.com/' },
+      { name: '猿题库', baseUrl: 'https://www.yuantiku.com/' },
+    ],
   };
 
   const openWebsite = (url: string) => {
     window.open(url, '_blank');
   };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-indigo-50 flex items-center justify-center">
-        <div className="text-center">
-          <Icon name="clock" size={48} className="text-indigo-500 animate-spin mb-4" />
-          <p className="text-gray-600">加载中...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-indigo-50">
@@ -121,57 +105,53 @@ export function Scraper() {
         </div>
 
         {/* 学习资源网站 */}
-        {config && (
-          <>
-            <div className="bg-white rounded-2xl p-6 shadow-lg mb-8">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">知识点学习网站</h2>
-              <div className="grid md:grid-cols-2 gap-4">
-                {config.knowledgeSites.map((site, index) => (
-                  <button
-                    key={index}
-                    onClick={() => openWebsite(site.baseUrl)}
-                    className="text-left border border-gray-200 rounded-xl p-4 hover:border-indigo-500 hover:bg-indigo-50 transition-colors"
-                  >
-                    <div className="flex items-center">
-                      <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center mr-3">
-                        <Icon name="globe" size={20} className="text-indigo-600" />
-                      </div>
-                      <div>
-                        <h3 className="font-medium text-gray-900">{site.name}</h3>
-                        <p className="text-sm text-gray-500">{site.baseUrl}</p>
-                      </div>
-                      <Icon name="external-link" size={16} className="ml-auto text-gray-400" />
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
+        <div className="bg-white rounded-2xl p-6 shadow-lg mb-8">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">知识点学习网站</h2>
+          <div className="grid md:grid-cols-2 gap-4">
+            {config.knowledgeSites.map((site, index) => (
+              <button
+                key={index}
+                onClick={() => openWebsite(site.baseUrl)}
+                className="text-left border border-gray-200 rounded-xl p-4 hover:border-indigo-500 hover:bg-indigo-50 transition-colors"
+              >
+                <div className="flex items-center">
+                  <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center mr-3">
+                    <Icon name="globe" size={20} className="text-indigo-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-gray-900">{site.name}</h3>
+                    <p className="text-sm text-gray-500">{site.baseUrl}</p>
+                  </div>
+                  <Icon name="external-link" size={16} className="ml-auto text-gray-400" />
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
 
-            <div className="bg-white rounded-2xl p-6 shadow-lg">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">试题与练习网站</h2>
-              <div className="grid md:grid-cols-2 gap-4">
-                {config.questionSites.map((site, index) => (
-                  <button
-                    key={index}
-                    onClick={() => openWebsite(site.baseUrl)}
-                    className="text-left border border-gray-200 rounded-xl p-4 hover:border-indigo-500 hover:bg-indigo-50 transition-colors"
-                  >
-                    <div className="flex items-center">
-                      <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center mr-3">
-                        <Icon name="clipboard-list" size={20} className="text-indigo-600" />
-                      </div>
-                      <div>
-                        <h3 className="font-medium text-gray-900">{site.name}</h3>
-                        <p className="text-sm text-gray-500">{site.baseUrl}</p>
-                      </div>
-                      <Icon name="external-link" size={16} className="ml-auto text-gray-400" />
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </>
-        )}
+        <div className="bg-white rounded-2xl p-6 shadow-lg">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">试题与练习网站</h2>
+          <div className="grid md:grid-cols-2 gap-4">
+            {config.questionSites.map((site, index) => (
+              <button
+                key={index}
+                onClick={() => openWebsite(site.baseUrl)}
+                className="text-left border border-gray-200 rounded-xl p-4 hover:border-indigo-500 hover:bg-indigo-50 transition-colors"
+              >
+                <div className="flex items-center">
+                  <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center mr-3">
+                    <Icon name="clipboard-list" size={20} className="text-indigo-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-gray-900">{site.name}</h3>
+                    <p className="text-sm text-gray-500">{site.baseUrl}</p>
+                  </div>
+                  <Icon name="external-link" size={16} className="ml-auto text-gray-400" />
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* 使用提示 */}
         <div className="bg-indigo-50 rounded-2xl p-6 mt-8">

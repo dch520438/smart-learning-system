@@ -36,14 +36,33 @@ export function Settings() {
 
   const applyTheme = () => {
     // 应用主题模式
-    const isDark = themeMode === 'dark' || (themeMode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    let isDark = false;
+    if (themeMode === 'dark') {
+      isDark = true;
+    } else if (themeMode === 'system') {
+      isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
     document.documentElement.classList.toggle('dark', isDark);
     
     // 应用背景颜色
-    document.documentElement.classList.remove('bg-blue', 'bg-green', 'bg-purple', 'bg-orange');
-    if (backgroundColor !== 'default') {
-      document.documentElement.classList.add(`bg-${backgroundColor}`);
+    document.documentElement.classList.remove('bg-default', 'bg-blue', 'bg-green', 'bg-purple', 'bg-orange');
+    document.documentElement.classList.add(`bg-${backgroundColor}`);
+    
+    // 也直接设置body样式，确保生效
+    let bgColor = '#f9fafb';
+    if (backgroundColor === 'blue') bgColor = '#eff6ff';
+    else if (backgroundColor === 'green') bgColor = '#f0fdf4';
+    else if (backgroundColor === 'purple') bgColor = '#faf5ff';
+    else if (backgroundColor === 'orange') bgColor = '#fff7ed';
+    
+    if (isDark) {
+      if (backgroundColor === 'default') bgColor = '#111827';
+      else if (backgroundColor === 'blue') bgColor = '#1e3a5f';
+      else if (backgroundColor === 'green') bgColor = '#14532d';
+      else if (backgroundColor === 'purple') bgColor = '#3b0764';
+      else if (backgroundColor === 'orange') bgColor = '#431407';
     }
+    document.body.style.backgroundColor = bgColor;
     
     // 保存设置
     localStorage.setItem('themeMode', themeMode);

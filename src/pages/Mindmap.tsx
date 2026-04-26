@@ -5,7 +5,7 @@ import { useAppStore } from '../store';
 
 export function Mindmap() {
   const navigate = useNavigate();
-  const { currentSubject, knowledgePoints, questions, addKnowledgePoint, updateKnowledgePoint, deleteKnowledgePoint } = useAppStore();
+  const { currentSubject, knowledgePoints, questions, memorizeItems, addKnowledgePoint, updateKnowledgePoint, deleteKnowledgePoint } = useAppStore();
   const [isEditing, setIsEditing] = useState(false);
   const [editFormData, setEditFormData] = useState({
     title: '',
@@ -21,6 +21,7 @@ export function Mindmap() {
 
   const subjectKnowledgePoints = knowledgePoints.filter((kp) => kp.subjectId === currentSubject.id);
   const subjectQuestions = questions.filter((q) => q.subjectId === currentSubject.id);
+  const subjectMemorizeItems = memorizeItems.filter((m) => m.subjectId === currentSubject.id);
 
   const handleAddKnowledgePoint = () => {
     const tagsArray = editFormData.tags.split(',').map((t) => t.trim()).filter(Boolean);
@@ -88,16 +89,64 @@ export function Mindmap() {
     subjectQuestions.forEach((q) => {
       q.knowledgePoints.forEach((kp) => {
         if (knowledgeMap.has(kp)) {
-          knowledgeMap.get(kp).children.push({
-            id: q.id,
-            title: `题目: ${q.content.substring(0, 20)}...`,
-          });
+          const node = knowledgeMap.get(kp);
+          if (q.isPattern) {
+            // 母题
+            node.children.push({
+              id: q.id,
+              title: `母题: ${q.content.substring(0, 15)}...`,
+              isPattern: true,
+            });
+          } else {
+            // 普通题目
+            node.children.push({
+              id: q.id,
+              title: `题目: ${q.content.substring(0, 15)}...`,
+            });
+          }
         }
       });
     });
 
+    // 将必记必背添加到对应的知识点（通过标签匹配）
+    subjectMemorizeItems.forEach((m) => {
+      // 尝试将必记必背添加到相关的知识点
+      let added = false;
+      for (const tag of m.tags) {
+        if (knowledgeMap.has(tag)) {
+          knowledgeMap.get(tag).children.push({
+            id: m.id,
+            title: `必记: ${m.title.substring(0, 15)}...`,
+            isMemorize: true,
+            isMemorized: m.isMemorized,
+          });
+          added = true;
+          break;
+        }
+      }
+      // 如果没有匹配到知识点，添加到根节点
+      if (!added) {
+        // 检查是否已存在必记必背分组
+        let memorizeGroup = root.children.find(c => c.id === 'memorize-group');
+        if (!memorizeGroup) {
+          memorizeGroup = {
+            id: 'memorize-group',
+            title: '必记必背',
+            children: [],
+          };
+          root.children.push(memorizeGroup);
+        }
+        memorizeGroup.children.push({
+          id: m.id,
+          title: `${m.title.substring(0, 15)}...`,
+          isMemorize: true,
+          isMemorized: m.isMemorized,
+        });
+      }
+    });
+
     // 将知识点添加到根节点
-    root.children = Array.from(knowledgeMap.values());
+    root.children = [...root.children, ...Array.from(knowledgeMap.values())];
 
     return root;
   };
@@ -130,6 +179,28 @@ export function Mindmap() {
     calculatePositions(mindmapData, 100, 300, 0);
 
     const drawNode = (node: any) => {
+      let fillColor = '#E0F2FE';
+      let strokeColor = '#93C5FD';
+      let textColor = '#0EA5E9';
+      
+      if (node.id === 'root') {
+        fillColor = '#0EA5E9';
+        strokeColor = '#0284C7';
+        textColor = 'white';
+      } else if (node.isPattern) {
+        fillColor = '#FEF3C7';
+        strokeColor = '#F59E0B';
+        textColor = '#D97706';
+      } else if (node.isMemorize) {
+        fillColor = node.isMemorized ? '#D1FAE5' : '#FCE7F3';
+        strokeColor = node.isMemorized ? '#10B981' : '#EC4899';
+        textColor = node.isMemorized ? '#059669' : '#DB2777';
+      } else if (node.id === 'memorize-group') {
+        fillColor = '#FCE7F3';
+        strokeColor = '#EC4899';
+        textColor = '#DB2777';
+      }
+
       return (
         <g key={node.id}>
           <rect
@@ -138,15 +209,15 @@ export function Mindmap() {
             width={node.width}
             height={node.height}
             rx={10}
-            fill={node.id === 'root' ? '#0EA5E9' : '#E0F2FE'}
-            stroke={node.id === 'root' ? '#0284C7' : '#93C5FD'}
+            fill={fillColor}
+            stroke={strokeColor}
             strokeWidth={2}
           />
           <text
             x={node.x + node.width / 2}
             y={node.y + 5}
             textAnchor="middle"
-            fill={node.id === 'root' ? 'white' : '#0EA5E9'}
+            fill={textColor}
             fontSize="14"
             fontWeight={node.id === 'root' ? 'bold' : 'normal'}
           >
@@ -160,7 +231,7 @@ export function Mindmap() {
                 y1={node.y}
                 x2={child.x}
                 y2={child.y}
-                stroke="#93C5FD"
+                stroke={strokeColor}
                 strokeWidth={2}
               />
             ))
@@ -291,7 +362,7 @@ export function Mindmap() {
 
         <div className="mt-8 bg-white rounded-2xl p-6 shadow-lg">
           <h2 className="text-xl font-bold text-gray-900 mb-6">知识点统计</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <div className="bg-sky-50 rounded-xl p-4">
               <div className="flex items-center space-x-3 mb-2">
                 <Icon name="book-open-check" size={24} className="text-sky-500" />
@@ -306,16 +377,29 @@ export function Mindmap() {
               </div>
               <p className="text-3xl font-bold text-sky-600">{subjectQuestions.length}</p>
             </div>
-            <div className="bg-sky-50 rounded-xl p-4">
+            <div className="bg-amber-50 rounded-xl p-4">
               <div className="flex items-center space-x-3 mb-2">
-                <Icon name="network" size={24} className="text-sky-500" />
-                <h3 className="font-semibold text-gray-900">知识关联</h3>
+                <Icon name="star" size={24} className="text-amber-500" />
+                <h3 className="font-semibold text-gray-900">母题数量</h3>
               </div>
-              <p className="text-3xl font-bold text-sky-600">
-                {subjectKnowledgePoints.reduce((sum, kp) => {
-                  const relatedQuestions = subjectQuestions.filter((q) => q.knowledgePoints.includes(kp.title));
-                  return sum + relatedQuestions.length;
-                }, 0)}
+              <p className="text-3xl font-bold text-amber-600">
+                {subjectQuestions.filter(q => q.isPattern).length}
+              </p>
+            </div>
+            <div className="bg-pink-50 rounded-xl p-4">
+              <div className="flex items-center space-x-3 mb-2">
+                <Icon name="book" size={24} className="text-pink-500" />
+                <h3 className="font-semibold text-gray-900">必记必背</h3>
+              </div>
+              <p className="text-3xl font-bold text-pink-600">{subjectMemorizeItems.length}</p>
+            </div>
+            <div className="bg-green-50 rounded-xl p-4">
+              <div className="flex items-center space-x-3 mb-2">
+                <Icon name="check-circle2" size={24} className="text-green-500" />
+                <h3 className="font-semibold text-gray-900">已记住</h3>
+              </div>
+              <p className="text-3xl font-bold text-green-600">
+                {subjectMemorizeItems.filter(m => m.isMemorized).length}
               </p>
             </div>
           </div>
