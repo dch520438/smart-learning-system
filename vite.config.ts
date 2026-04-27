@@ -57,7 +57,7 @@ export default defineConfig({
           }
         ]
       },
-      filename: 'manifest.json',
+      filename: 'manifest.webmanifest',
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg}'],
         runtimeCaching: [
