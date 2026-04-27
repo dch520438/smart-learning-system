@@ -22,6 +22,7 @@ export function Scraper() {
       { name: '维基百科', baseUrl: 'https://zh.wikipedia.org/' },
       { name: '豆包', baseUrl: 'https://www.doubao.com/' },
       { name: '知乎', baseUrl: 'https://www.zhihu.com/' },
+      { name: '中小学智慧教育平台', baseUrl: 'https://www.smartedu.cn/' },
     ],
     questionSites: [
       { name: '菁优网', baseUrl: 'https://www.jyeoo.com/' },
