@@ -32,12 +32,14 @@ const navItems = [
 export function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { currentLevel, setCurrentLevel, currentSubject, subjects, knowledgePoints, notes, questions, memorizeItems, currentUser, users, logout, switchUser } = useAppStore();
+  const { currentLevel, setCurrentLevel, currentSubject, subjects, knowledgeItems, notes, mistakeItems, patternItems, currentUser, users, logout, switchUser } = useAppStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showAddLevelModal, setShowAddLevelModal] = useState(false);
   const [newLevelName, setNewLevelName] = useState('');
   const [newLevelKey, setNewLevelKey] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [showSearchBox, setShowSearchBox] = useState(false);
+  const [showNavMenu, setShowNavMenu] = useState(false);
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -72,21 +74,115 @@ export function Navbar() {
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
     setSearchQuery(query);
-    setShowSearchResults(false);
+    
+    if (query.trim().length > 0 && currentSubject) {
+      const results: any[] = [];
+      
+      // 搜索知识点
+      knowledgeItems
+        .filter(item => item.subjectId === currentSubject.id)
+        .forEach(item => {
+          if (item.title.toLowerCase().includes(query.toLowerCase()) || 
+              item.content.toLowerCase().includes(query.toLowerCase())) {
+            results.push({
+              type: 'knowledge',
+              title: item.title,
+              content: item.content.substring(0, 100) + '...',
+              path: '/knowledge'
+            });
+          }
+        });
+      
+      // 搜索笔记
+      notes
+        .filter(note => note.subjectId === currentSubject.id)
+        .forEach(note => {
+          if (note.title.toLowerCase().includes(query.toLowerCase()) || 
+              note.content.toLowerCase().includes(query.toLowerCase())) {
+            results.push({
+              type: 'notes',
+              title: note.title,
+              content: note.content.substring(0, 100) + '...',
+              path: '/notes'
+            });
+          }
+        });
+      
+      // 搜索必记必背
+      const memorizeItemsFromStore = useAppStore.getState().memorizeItems;
+      memorizeItemsFromStore
+        .filter(item => item.subjectId === currentSubject.id)
+        .forEach(item => {
+          if (item.title.toLowerCase().includes(query.toLowerCase()) || 
+              item.content.toLowerCase().includes(query.toLowerCase())) {
+            results.push({
+              type: 'memorize',
+              title: item.title,
+              content: item.content.substring(0, 100) + '...',
+              path: '/memorize'
+            });
+          }
+        });
+      
+      // 搜索错题
+      mistakeItems
+        .filter(item => item.subjectId === currentSubject.id)
+        .forEach(item => {
+          if (item.question.toLowerCase().includes(query.toLowerCase())) {
+            results.push({
+              type: 'mistakes',
+              title: item.question.substring(0, 50) + '...',
+              content: '错题',
+              path: '/mistakes'
+            });
+          }
+        });
+      
+      // 搜索母题
+      patternItems
+        .filter(item => item.subjectId === currentSubject.id)
+        .forEach(item => {
+          if (item.title.toLowerCase().includes(query.toLowerCase()) || 
+              item.content.toLowerCase().includes(query.toLowerCase())) {
+            results.push({
+              type: 'patterns',
+              title: item.title,
+              content: item.content.substring(0, 100) + '...',
+              path: '/patterns'
+            });
+          }
+        });
+      
+      setSearchResults(results);
+      setShowSearchResults(true);
+    } else {
+      setShowSearchResults(false);
+      setSearchResults([]);
+    }
   };
 
   const handleSearchResultClick = (result: any) => {
     navigate(result.path);
     setShowSearchResults(false);
     setSearchQuery('');
+    setShowSearchBox(false);
   };
 
   return (
     <nav className="bg-white dark:bg-gray-900 shadow-lg sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between h-auto md:h-16 py-4 md:py-0">
+        <div className="flex items-center justify-between h-16">
+          {/* 左侧导航按钮 */}
+          <button
+            onClick={() => setShowNavMenu(!showNavMenu)}
+            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            title="显示导航"
+          >
+            <Icon name={showNavMenu ? "x" : "menu"} size={24} />
+          </button>
+
           {/* 品牌标识 */}
-          <div className="flex items-center mb-4 md:mb-0">
+          <div className="flex-1 flex items-center justify-center">
             <Link to="/" className="flex items-center space-x-2">
               <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-green-500 rounded-xl flex items-center justify-center">
                 <Icon name="brain" size={24} className="text-white" />
@@ -97,166 +193,202 @@ export function Navbar() {
             </Link>
           </div>
 
-          {/* 搜索框 */}
-          <form 
-            className="relative mb-4 md:mb-0 w-full md:w-64"
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (searchQuery.trim()) {
-                navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
-              }
-            }}
-          >
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={handleSearch}
-              placeholder="搜索知识点、笔记、题目..."
-              className="w-full px-4 py-2 pr-10 rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-            <button 
-              type="submit"
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-blue-500 transition-colors"
-            >
-              <Icon name="search" size={18} />
-            </button>
-          </form>
-
-          {/* 年级选择 */}
-          <div className="flex items-center space-x-2 mb-4 md:mb-0">
-            {uniqueLevels.map((level) => (
-              <button
-                key={level}
-                onClick={() => setCurrentLevel(level)}
-                className={`px-3 py-1 rounded-full text-sm font-medium transition-all duration-200 ${
-                  currentLevel === level
-                    ? 'bg-blue-500 text-white'
-                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                }`}
-              >
-                {levelLabels[level]}
-              </button>
-            ))}
-            <button
-              onClick={() => setShowAddLevelModal(true)}
-              className="px-3 py-1 rounded-full text-sm font-medium transition-all duration-200 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center"
-            >
-              <Icon name="plus" size={14} className="mr-1" />
-              添加年级
-            </button>
-          </div>
-
-          {/* 用户菜单 */}
-          <div className="relative">
-            <button
-              onClick={() => setShowUserMenu(!showUserMenu)}
-              className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-            >
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-green-500 rounded-full flex items-center justify-center">
-                <span className="text-white font-medium">
-                  {currentUser?.username.charAt(0).toUpperCase() || 'U'}
-                </span>
-              </div>
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                {currentUser?.username || '用户'}
-              </span>
-              <Icon name="chevron-down" size={16} className="text-gray-500 dark:text-gray-400" />
-            </button>
-            
-            {showUserMenu && (
-              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-900 rounded-lg shadow-lg py-2 z-50">
-                {/* 用户切换 */}
-                <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-800">
-                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">切换用户</p>
-                  {users.map((user) => (
-                    <button
-                      key={user.id}
-                      onClick={() => {
-                        switchUser(user.id);
-                        setShowUserMenu(false);
-                      }}
-                      className={`w-full text-left px-3 py-2 rounded-lg text-sm ${currentUser?.id === user.id ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300' : 'hover:bg-gray-100 dark:hover:bg-gray-800'}`}
-                    >
-                      <div className="flex items-center space-x-2">
-                        <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-green-500 rounded-full flex items-center justify-center">
-                          <span className="text-white text-xs font-medium">
-                            {user.username.charAt(0).toUpperCase()}
-                          </span>
-                        </div>
-                        <span>{user.username}</span>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-                
-                {/* 登出按钮 */}
-                <button
-                  onClick={() => {
-                    logout();
-                    navigate('/auth');
-                  }}
-                  className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-800"
-                >
-                  <div className="flex items-center space-x-2">
-                    <Icon name="log-out" size={16} />
-                    <span>登出</span>
-                  </div>
-                </button>
-              </div>
-            )}
-          </div>
-          
-          {/* 移动端菜单按钮 */}
+          {/* 右侧搜索按钮 */}
           <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 ml-2"
+            onClick={() => setShowSearchBox(!showSearchBox)}
+            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            title="搜索"
           >
-            <Icon name="menu" size={24} />
+            <Icon name="search" size={24} />
           </button>
         </div>
 
-        {/* 桌面端导航菜单 */}
-        <div className="hidden md:flex items-center justify-center space-x-1 py-2">
-          {navItems.map((item, index) => (
-            <React.Fragment key={item.path}>
-              {index > 0 && <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-1"></div>}
-              <Link
-                to={item.path}
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center space-x-1 ${
-                  location.pathname === item.path
-                    ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
-                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                }`}
+        {/* 搜索框 */}
+        {showSearchBox && (
+          <div className="pb-4 relative">
+            <form 
+              className="relative w-full"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (searchQuery.trim()) {
+                  navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
+                }
+              }}
+            >
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={handleSearch}
+                placeholder="搜索知识点、笔记、题目..."
+                autoFocus
+                className="w-full px-4 py-3 pr-10 rounded-xl border border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg"
+              />
+              <button 
+                type="submit"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-blue-500 transition-colors"
               >
-                <Icon name={item.icon} size={16} />
-                <span>{item.label}</span>
-              </Link>
-            </React.Fragment>
-          ))}
-        </div>
+                <Icon name="search" size={20} />
+              </button>
+            </form>
+
+            {/* 搜索结果 */}
+            {showSearchResults && searchResults.length > 0 && (
+              <div className="absolute z-50 w-full mt-2 bg-white dark:bg-gray-900 rounded-xl shadow-lg max-h-96 overflow-y-auto">
+                <div className="p-2">
+                  {searchResults.map((result, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleSearchResultClick(result)}
+                      className="w-full text-left p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <Icon 
+                            name={result.type === 'knowledge' ? 'book-open' : 
+                                  result.type === 'notes' ? 'file-text' : 
+                                  result.type === 'memorize' ? 'brain' : 
+                                  result.type === 'mistakes' ? 'alert-triangle' : 'layers'} 
+                            size={16} 
+                            className="text-blue-500"
+                          />
+                          <span className="font-medium text-gray-800 dark:text-gray-200">{result.title}</span>
+                        </div>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          {result.type === 'knowledge' ? '知识点' : 
+                           result.type === 'notes' ? '笔记' : 
+                           result.type === 'memorize' ? '必记必背' : 
+                           result.type === 'mistakes' ? '错题' : '母题'}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{result.content}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 导航菜单 */}
+        {showNavMenu && (
+          <div className="pb-4 border-t border-gray-200 dark:border-gray-800">
+            {/* 年级选择 */}
+            <div className="py-3">
+              <div className="flex items-center space-x-2 overflow-x-auto pb-2">
+                {uniqueLevels.map((level) => (
+                  <button
+                    key={level}
+                    onClick={() => setCurrentLevel(level)}
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap ${
+                      currentLevel === level
+                        ? 'bg-blue-500 text-white'
+                        : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                    }`}
+                  >
+                    {levelLabels[level]}
+                  </button>
+                ))}
+                <button
+                  onClick={() => setShowAddLevelModal(true)}
+                  className="px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center whitespace-nowrap"
+                >
+                  <Icon name="plus" size={16} className="mr-1" />
+                  添加年级
+                </button>
+              </div>
+            </div>
+
+            {/* 导航项目 */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+              {navItems.map((item) => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  onClick={() => setShowNavMenu(false)}
+                  className={`p-3 rounded-xl text-sm font-medium transition-all duration-200 flex items-center space-x-2 ${
+                    location.pathname === item.path
+                      ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
+                      : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                  }`}
+                >
+                  <Icon name={item.icon} size={18} />
+                  <span>{item.label}</span>
+                </Link>
+              ))}
+            </div>
+
+            {/* 用户菜单 */}
+            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-800">
+              <button
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800"
+              >
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-green-500 rounded-full flex items-center justify-center">
+                    <span className="text-white font-medium text-lg">
+                      {currentUser?.username.charAt(0).toUpperCase() || 'U'}
+                    </span>
+                  </div>
+                  <div className="text-left">
+                    <div className="font-medium text-gray-800 dark:text-gray-200">
+                      {currentUser?.username || '用户'}
+                    </div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                      当前用户
+                    </div>
+                  </div>
+                </div>
+                <Icon name="chevron-down" size={16} className="text-gray-500 dark:text-gray-400" />
+              </button>
+              
+              {showUserMenu && (
+                <div className="mt-2 bg-gray-50 dark:bg-gray-800 rounded-xl p-2">
+                  {/* 用户切换 */}
+                  <div className="mb-2">
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 px-2">切换用户</p>
+                    {users.map((user) => (
+                      <button
+                        key={user.id}
+                        onClick={() => {
+                          switchUser(user.id);
+                          setShowUserMenu(false);
+                          setShowNavMenu(false);
+                        }}
+                        className={`w-full text-left px-3 py-2 rounded-lg text-sm ${currentUser?.id === user.id ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                      >
+                        <div className="flex items-center space-x-2">
+                          <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-green-500 rounded-full flex items-center justify-center">
+                            <span className="text-white text-xs font-medium">
+                              {user.username.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                          <span>{user.username}</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                  
+                  {/* 登出按钮 */}
+                  <button
+                    onClick={() => {
+                      logout();
+                      navigate('/auth');
+                    }}
+                    className="w-full text-left px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <Icon name="log-out" size={16} />
+                      <span>登出</span>
+                    </div>
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
-      {mobileMenuOpen && (
-        <div className="md:hidden bg-white dark:bg-gray-900 border-t dark:border-gray-800">
-          <div className="px-4 py-3 space-y-1">
-            {navItems.map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                onClick={() => setMobileMenuOpen(false)}
-                className={`px-3 py-2 rounded-lg text-sm font-medium flex items-center space-x-2 ${
-                  location.pathname === item.path
-                    ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
-                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                }`}
-              >
-                <Icon name={item.icon} size={18} />
-                <span>{item.label}</span>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
+
 
       {currentSubject && (
         <div className="bg-gray-50 dark:bg-gray-800 border-t dark:border-gray-700">
