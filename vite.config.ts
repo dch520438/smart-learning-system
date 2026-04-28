@@ -36,18 +36,22 @@ export default defineConfig({
         background_color: '#ffffff',
         start_url: '/smart-learning-system/',
         display: 'standalone',
+        display_override: ['standalone', 'fullscreen'],
         lang: 'zh-CN',
         scope: '/smart-learning-system/',
+        orientation: 'portrait-primary',
         icons: [
           {
             src: 'pwa-192x192.svg',
             sizes: '192x192',
-            type: 'image/svg+xml'
+            type: 'image/svg+xml',
+            purpose: 'any'
           },
           {
             src: 'pwa-512x512.svg',
             sizes: '512x512',
-            type: 'image/svg+xml'
+            type: 'image/svg+xml',
+            purpose: 'any'
           },
           {
             src: 'pwa-512x512.svg',
@@ -55,7 +59,28 @@ export default defineConfig({
             type: 'image/svg+xml',
             purpose: 'any maskable'
           }
-        ]
+        ],
+        shortcuts: [
+          {
+            name: '知识归纳',
+            short_name: '知识',
+            url: '/smart-learning-system/knowledge',
+            description: '管理知识点'
+          },
+          {
+            name: '必背必记',
+            short_name: '必记',
+            url: '/smart-learning-system/memorize',
+            description: '记忆检测'
+          },
+          {
+            name: '错题整理',
+            short_name: '错题',
+            url: '/smart-learning-system/mistakes',
+            description: '错题分析'
+          }
+        ],
+        prefer_related_applications: false
       },
       filename: 'manifest.webmanifest',
       workbox: {
