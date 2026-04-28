@@ -222,57 +222,59 @@ export function Knowledge() {
             </p>
           </div>
         ) : showMode === 'card' ? (
-          <div className="grid gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredAndSortedKnowledge.map((kp) => (
               <div 
                 key={kp.id} 
-                className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-blue-200 cursor-pointer"
+                className={`
+                  aspect-square bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 
+                  transform hover:-translate-y-2 cursor-pointer
+                  border-l-4 border-blue-500
+                  relative overflow-hidden group
+                `}
                 onClick={() => handleKnowledgeClick(kp)}
               >
-                <div className="flex flex-col md:flex-row md:items-start justify-between space-y-4 md:space-y-0">
-                  <div className="flex-1">
+                <div className="flex items-start justify-between h-full flex-col">
+                  <div className="flex-1 overflow-hidden">
                     <div className="flex items-center space-x-2 mb-3">
-                      <div className="w-2 h-8 bg-blue-500 rounded-full"></div>
-                      <h3 className="text-xl font-semibold text-gray-900">{kp.title}</h3>
-                      <span className="text-xs text-gray-500 ml-auto">
-                        {new Date(kp.updatedAt).toLocaleDateString('zh-CN')}
-                      </span>
+                      <h3 className="text-lg font-semibold text-gray-900">{kp.title}</h3>
                     </div>
-                    <div className="text-gray-700 mb-4 prose max-w-none" dangerouslySetInnerHTML={{ __html: kp.content }} />
+                    <div className="text-gray-700 mb-3 line-clamp-4" dangerouslySetInnerHTML={{ __html: kp.content }} />
                     {kp.images && kp.images.length > 0 && (
-                      <div className="grid grid-cols-4 gap-3 mb-4">
-                        {kp.images.map((image, index) => (
-                          <div key={index} className="relative group">
-                            <img
-                              src={image}
-                              alt={`图片 ${index + 1}`}
-                              className="w-full h-32 object-cover rounded-lg transition-transform duration-300 group-hover:scale-105"
-                            />
-                            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 rounded-lg transition-colors duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
-                              <Icon name="zoom-in" size={20} className="text-white" />
-                            </div>
-                          </div>
+                      <div className="grid grid-cols-2 gap-1 mb-3">
+                        {kp.images.slice(0, 4).map((image, index) => (
+                          <img
+                            key={index}
+                            src={image}
+                            alt={`图片 ${index + 1}`}
+                            className="w-full h-16 object-cover rounded-lg"
+                          />
                         ))}
                       </div>
                     )}
                     {kp.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-2">
-                        {kp.tags.map((tag, index) => (
+                      <div className="flex flex-wrap gap-1">
+                        {kp.tags.slice(0, 3).map((tag, index) => (
                           <span
                             key={index}
                             onClick={(e) => {
                               e.stopPropagation();
                               setFilterTag(tag);
                             }}
-                            className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm cursor-pointer hover:bg-blue-200 transition-colors"
+                            className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs cursor-pointer hover:bg-blue-200 transition-colors"
                           >
                             {tag}
                           </span>
                         ))}
+                        {kp.tags.length > 3 && (
+                          <span className="px-2 py-1 bg-gray-100 text-gray-500 rounded-full text-xs">
+                            +{kp.tags.length - 3}
+                          </span>
+                        )}
                       </div>
                     )}
                   </div>
-                  <div className="flex flex-col items-center space-y-2 ml-0 md:ml-4 pt-2 md:pt-0">
+                  <div className="flex items-center justify-end space-x-2 pt-3 border-t border-gray-100">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -281,7 +283,7 @@ export function Knowledge() {
                       className="p-2 text-gray-500 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
                       title="编辑"
                     >
-                      <Icon name="edit" size={20} />
+                      <Icon name="edit" size={16} />
                     </button>
                     <button
                       onClick={(e) => {
@@ -291,7 +293,7 @@ export function Knowledge() {
                       className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                       title="删除"
                     >
-                      <Icon name="trash2" size={20} />
+                      <Icon name="trash2" size={16} />
                     </button>
                   </div>
                 </div>

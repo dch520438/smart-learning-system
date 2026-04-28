@@ -289,23 +289,51 @@ export function Memorize() {
         const recognition = new SpeechRecognition();
         recognition.lang = 'zh-CN';
         recognition.continuous = false;
-        recognition.interimResults = false;
+        recognition.interimResults = true; // 设置为true，可以看到中间结果，提升用户体验
+        
+        let isFinalResult = false;
+        
+        recognition.onstart = () => {
+          console.log('语音识别已开始，请开始说话');
+        };
         
         recognition.onresult = (event: any) => {
-          const transcript = event.results[0][0].transcript;
-          setTestAnswer(transcript);
+          let finalTranscript = '';
+          let interimTranscript = '';
+          
+          for (let i = event.resultIndex; i < event.results.length; ++i) {
+            if (event.results[i].isFinal) {
+              finalTranscript += event.results[i][0].transcript;
+              isFinalResult = true;
+            } else {
+              interimTranscript += event.results[i][0].transcript;
+            }
+          }
+          
+          if (finalTranscript) {
+            setTestAnswer(finalTranscript);
+          }
         };
         
         recognition.onerror = (event: any) => {
           console.error('语音识别错误:', event.error);
-          alert(`语音识别错误: ${event.error}，请确保您的浏览器支持语音识别功能，并已授予麦克风权限`);
+          // 某些错误不需要显示警告，比如 no-speech
+          if (event.error !== 'no-speech' && event.error !== 'aborted') {
+            alert(`语音识别错误: ${event.error}，请确保您的浏览器支持语音识别功能，并已授予麦克风权限`);
+          }
         };
         
         recognition.onend = () => {
           console.log('语音识别结束');
         };
         
-        recognition.start();
+        // 使用try-catch包裹start调用，处理可能的异常
+        try {
+          recognition.start();
+        } catch (startError) {
+          console.error('启动语音识别时出错:', startError);
+          alert('无法启动语音识别，请稍后重试');
+        }
       } else {
         alert('您的浏览器不支持语音识别功能，请尝试使用Chrome浏览器');
       }
@@ -460,21 +488,16 @@ export function Memorize() {
                 <p className="text-gray-600 mb-6">尝试调整筛选条件或添加新的必背内容</p>
               </div>
             ) : showMode === 'card' ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredAndSortedItems.map((item, index) => (
                   <div 
                     key={item.id} 
                     className={`
                       aspect-square bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 
-                      transform hover:-translate-y-1
-                      ${item.isMemorized ? 'border-l-4 border-purple-500' : ''}
-                      relative overflow-hidden
+                      transform hover:-translate-y-2 cursor-pointer
+                      ${item.isMemorized ? 'border-l-4 border-green-500' : 'border-l-4 border-purple-500'}
+                      relative overflow-hidden group
                     `}
-                    style={{
-                      // 添加堆叠效果的阴影层次
-                      zIndex: index,
-                      marginTop: index > 0 ? '-4px' : '0',
-                    }}
                   >
                     <div className="flex items-start justify-between h-full flex-col">
                       <div className="flex-1">

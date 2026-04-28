@@ -1,12 +1,24 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import tsconfigPaths from "vite-tsconfig-paths";
-import { traeBadgePlugin } from 'vite-plugin-trae-solo-badge';
-import { VitePWA } from 'vite-plugin-pwa';
+import tsconfigPaths from "vite-tsconfig-paths"
+import { VitePWA } from 'vite-plugin-pwa'
 
-// https://vite.dev/config/
 export default defineConfig({
   base: '/smart-learning-system/',
+
+  // 强制使用本地正常地址，彻底解决 EADDRNOTAVAIL
+  server: {
+    host: '0.0.0.0',
+    port: 5173,
+    strictPort: false,
+  },
+
+  // 预览构建结果也用正确IP
+  preview: {
+    host: '0.0.0.0',
+    port: 5173,
+  },
+
   plugins: [
     react({
       babel: {
@@ -15,15 +27,6 @@ export default defineConfig({
         ],
       },
     }),
-    traeBadgePlugin({
-      variant: 'dark',
-      position: 'bottom-right',
-      prodOnly: true,
-      clickable: true,
-      clickUrl: 'https://www.trae.ai/solo?showJoin=1',
-      autoTheme: true,
-      autoThemeTarget: '#root'
-    }), 
     tsconfigPaths(),
     VitePWA({
       registerType: 'autoUpdate',
@@ -82,9 +85,12 @@ export default defineConfig({
         ],
         prefer_related_applications: false
       },
-      filename: 'manifest.webmanifest',
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg}'],
+        globPatterns: [
+          '**/*.{html,js,css,ico,png,svg,jpg,jpeg,gif,woff,woff2,ttf,eot,json}'
+        ],
+        navigateFallback: '/smart-learning-system/index.html',
+        maximumFileSizeToCacheInBytes: 999999999,
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\//i,
@@ -93,7 +99,7 @@ export default defineConfig({
               cacheName: 'google-fonts-cache',
               expiration: {
                 maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365 // <== 365 days
+                maxAgeSeconds: 60 * 60 * 24 * 365
               },
               cacheableResponse: {
                 statuses: [0, 200]
@@ -101,29 +107,10 @@ export default defineConfig({
             }
           }
         ]
-      }
+      },
+      devOptions: {
+        enabled: true,
+      },
     }),
   ],
-  server: {
-    host: '0.0.0.0',
-    port: 5173,
-    proxy: {
-      '/api': {
-        target: 'http://localhost:3001',
-        changeOrigin: true,
-        secure: false,
-        configure: (proxy, _options) => {
-          proxy.on('error', (err, _req, _res) => {
-            console.log('proxy error', err);
-          });
-          proxy.on('proxyReq', (proxyReq, req, _res) => {
-            console.log('Sending Request to the Target:', req.method, req.url);
-          });
-          proxy.on('proxyRes', (proxyRes, req, _res) => {
-            console.log('Received Response from the Target:', proxyRes.statusCode, req.url);
-          });
-        },
-      }
-    }
-  }
 })

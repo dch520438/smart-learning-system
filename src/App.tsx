@@ -21,6 +21,7 @@ import { Settings } from "./pages/Settings";
 import { SearchPage } from "./pages/SearchPage";
 import { Placeholder } from "./pages/Placeholder";
 import { AuthPage } from "./pages/AuthPage";
+import { Print } from "./pages/Print";
 import { useAppStore } from "./store";
 
 // 路由保护组件
@@ -111,6 +112,7 @@ export default function App() {
                 <Route path="/scraper" element={<Scraper />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/search" element={<SearchPage />} />
+                <Route path="/print" element={<Print />} />
               </Routes>
             </div>
           </ProtectedRoute>

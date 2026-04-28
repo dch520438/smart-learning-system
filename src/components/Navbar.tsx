@@ -26,6 +26,7 @@ const navItems = [
   { path: '/scraper', label: '数据抓取', icon: 'globe' },
   { path: '/analysis', label: '学习分析', icon: 'line-chart' },
   { path: '/mindmap', label: '思维导图', icon: 'network' },
+  { path: '/print', label: '打印资料', icon: 'printer' },
   { path: '/settings', label: '设置', icon: 'settings' },
 ];
 

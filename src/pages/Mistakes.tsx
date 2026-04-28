@@ -288,14 +288,25 @@ export function Mistakes() {
                 <p className="text-gray-600 mb-6">尝试调整筛选条件或添加新的错题</p>
               </div>
             ) : showMode === 'card' ? (
-              <div className="grid gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredAndSortedMistakes.map((question) => (
-                  <div key={question.id} className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3 mb-4">
+                  <div 
+                    key={question.id} 
+                    className={`
+                      aspect-square bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 
+                      transform hover:-translate-y-2 cursor-pointer
+                      border-l-4
+                      relative overflow-hidden group
+                    `}
+                    style={{
+                      borderLeftColor: difficultyColors[question.difficulty],
+                    }}
+                  >
+                    <div className="flex items-start justify-between h-full flex-col">
+                      <div className="flex-1 overflow-hidden">
+                        <div className="flex items-center space-x-2 mb-3">
                           <span
-                            className="px-3 py-1 rounded-full text-sm font-medium"
+                            className="px-2 py-1 rounded-full text-xs font-medium"
                             style={{
                               backgroundColor: difficultyColors[question.difficulty] + '20',
                               color: difficultyColors[question.difficulty],
@@ -304,61 +315,74 @@ export function Mistakes() {
                             {difficultyLabels[question.difficulty]}
                           </span>
                           {question.knowledgePoints.length > 0 &&
-                            question.knowledgePoints.map((kp, index) => (
+                            question.knowledgePoints.slice(0, 2).map((kp, index) => (
                               <span
                                 key={index}
-                                onClick={() => setFilterKnowledgePoint(kp)}
-                                className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm cursor-pointer hover:bg-gray-200 transition-colors"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setFilterKnowledgePoint(kp);
+                                }}
+                                className="px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-xs cursor-pointer hover:bg-gray-200 transition-colors"
                               >
                                 {kp}
                               </span>
                             ))}
+                          {question.knowledgePoints.length > 2 && (
+                            <span className="px-2 py-1 bg-gray-100 text-gray-500 rounded-full text-xs">
+                              +{question.knowledgePoints.length - 2}
+                            </span>
+                          )}
                         </div>
-                        <div className="text-gray-900 mb-4" dangerouslySetInnerHTML={{ __html: question.content }} />
+                        <div className="text-gray-900 mb-3 line-clamp-4" dangerouslySetInnerHTML={{ __html: question.content }} />
                         {question.images && question.images.length > 0 && (
-                          <div className="grid grid-cols-4 gap-2 mb-4">
-                            {question.images.map((image, index) => (
+                          <div className="grid grid-cols-2 gap-1 mb-3">
+                            {question.images.slice(0, 4).map((image, index) => (
                               <img
                                 key={index}
                                 src={image}
                                 alt={`图片 ${index + 1}`}
-                                className="w-full h-24 object-cover rounded-lg"
+                                className="w-full h-16 object-cover rounded-lg"
                               />
                             ))}
                           </div>
                         )}
-                        {question.answer && (
-                          <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-4">
-                            <h4 className="font-semibold text-green-800 mb-2">答案</h4>
-                            <div className="text-green-700" dangerouslySetInnerHTML={{ __html: question.answer }} />
-                          </div>
-                        )}
-                        {question.analysis && (
-                          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                            <h4 className="font-semibold text-blue-800 mb-2">解析</h4>
-                            <div className="text-blue-700" dangerouslySetInnerHTML={{ __html: question.analysis }} />
-                          </div>
-                        )}
+                        <div className="flex flex-wrap gap-2 text-xs">
+                          {question.answer && (
+                            <span className="px-2 py-1 bg-green-100 text-green-700 rounded-full">有答案</span>
+                          )}
+                          {question.analysis && (
+                            <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full">有解析</span>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex flex-col items-center space-y-2 ml-4">
+                      <div className="flex items-center justify-end space-x-2 pt-3 border-t border-gray-100">
                         <button
-                          onClick={() => toggleMistake(question)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleMistake(question);
+                          }}
                           className="p-2 text-yellow-500 hover:text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors"
                           title="标记为已掌握"
                         >
-                          <Icon name="check-circle2" size={20} />
+                          <Icon name="check-circle2" size={16} />
                         </button>
                         <button
-                          onClick={() => handleEdit(question)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEdit(question);
+                          }}
                           className="p-2 text-gray-500 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
                         >
-                          <Icon name="edit" size={20} />
+                          <Icon name="edit" size={16} />
                         </button>
                         <button
-                          onClick={() => handleDelete(question.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(question.id);
+                          }}
                           className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                         >
-                          <Icon name="trash2" size={20} />
+                          <Icon name="trash2" size={16} />
                         </button>
                       </div>
                     </div>

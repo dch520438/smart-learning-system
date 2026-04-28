@@ -1,1 +1,1 @@
-if('serviceWorker' in navigator) {window.addEventListener('load', () => {navigator.serviceWorker.register('/smart-learning-system/manifest.webmanifest', { scope: '/smart-learning-system/' })})}
+if('serviceWorker' in navigator) {window.addEventListener('load', () => {navigator.serviceWorker.register('/smart-learning-system/sw.js', { scope: '/smart-learning-system/' })})}
