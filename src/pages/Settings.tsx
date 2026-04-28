@@ -13,6 +13,9 @@ export function Settings() {
   const [editUsername, setEditUsername] = useState('');
   const [editEmail, setEditEmail] = useState('');
   const [editPassword, setEditPassword] = useState('');
+  const [editNickname, setEditNickname] = useState('');
+  const [editBio, setEditBio] = useState('');
+  const [editGrade, setEditGrade] = useState('');
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
   
   const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
@@ -203,6 +206,9 @@ export function Settings() {
     setEditUsername(currentUser.username);
     setEditEmail(currentUser.email);
     setEditPassword('');
+    setEditNickname(currentUser.nickname || '');
+    setEditBio(currentUser.bio || '');
+    setEditGrade(currentUser.grade || '');
     setShowEditAccountModal(true);
   };
   
@@ -213,6 +219,9 @@ export function Settings() {
     if (editUsername) userData.username = editUsername;
     if (editEmail) userData.email = editEmail;
     if (editPassword) userData.password = editPassword;
+    if (editNickname || editNickname === '') userData.nickname = editNickname || undefined;
+    if (editBio || editBio === '') userData.bio = editBio || undefined;
+    if (editGrade || editGrade === '') userData.grade = editGrade || undefined;
     
     const success = updateUser(currentUser.id, userData);
     if (success) {
@@ -261,19 +270,32 @@ export function Settings() {
             <div className="space-y-4">
               {/* 当前账号信息 */}
               <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-xl">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-green-500 rounded-full flex items-center justify-center">
-                  <span className="text-white font-medium text-lg">
-                    {currentUser.username.charAt(0).toUpperCase()}
+                <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-green-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-semibold text-xl">
+                    {currentUser.nickname?.charAt(0).toUpperCase() || currentUser.username.charAt(0).toUpperCase()}
                   </span>
                 </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">{currentUser.username}</h3>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {currentUser.nickname || currentUser.username}
+                    <span className="text-sm font-normal text-gray-500 ml-2">@{currentUser.username}</span>
+                  </h3>
                   <p className="text-gray-600">{currentUser.email}</p>
+                  {currentUser.grade && (
+                    <p className="text-sm text-gray-500">年级：{currentUser.grade}</p>
+                  )}
                   <p className="text-sm text-gray-500">
                     注册时间：{new Date(currentUser.createdAt).toLocaleDateString('zh-CN')}
                   </p>
                 </div>
               </div>
+              
+              {/* 个人简介 */}
+              {currentUser.bio && (
+                <div className="p-4 bg-gray-50 rounded-xl">
+                  <p className="text-gray-600">{currentUser.bio}</p>
+                </div>
+              )}
               
               {/* 操作按钮 */}
               <div className="grid md:grid-cols-2 gap-4">
@@ -478,7 +500,7 @@ export function Settings() {
       {/* 编辑账号模态框 */}
       {showEditAccountModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full">
+          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-xl font-semibold text-gray-900">编辑账号</h3>
@@ -502,12 +524,59 @@ export function Settings() {
                 </div>
                 
                 <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">昵称</label>
+                  <input
+                    type="text"
+                    value={editNickname}
+                    onChange={(e) => setEditNickname(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="您的昵称"
+                  />
+                </div>
+                
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">邮箱</label>
                   <input
                     type="email"
                     value={editEmail}
                     onChange={(e) => setEditEmail(e.target.value)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">年级</label>
+                  <select
+                    value={editGrade}
+                    onChange={(e) => setEditGrade(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                  >
+                    <option value="">请选择年级</option>
+                    <option value="小学一年级">小学一年级</option>
+                    <option value="小学二年级">小学二年级</option>
+                    <option value="小学三年级">小学三年级</option>
+                    <option value="小学四年级">小学四年级</option>
+                    <option value="小学五年级">小学五年级</option>
+                    <option value="小学六年级">小学六年级</option>
+                    <option value="初一">初一</option>
+                    <option value="初二">初二</option>
+                    <option value="初三">初三</option>
+                    <option value="高一">高一</option>
+                    <option value="高二">高二</option>
+                    <option value="高三">高三</option>
+                    <option value="大学">大学</option>
+                    <option value="其他">其他</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">个人简介</label>
+                  <textarea
+                    value={editBio}
+                    onChange={(e) => setEditBio(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                    rows={3}
+                    placeholder="简单介绍一下自己..."
                   />
                 </div>
                 

@@ -120,6 +120,10 @@ export interface User {
   username: string;
   email: string;
   password: string;
+  nickname?: string;
+  avatar?: string;
+  bio?: string;
+  grade?: string;
   createdAt: Date;
 }
 
