@@ -1,7 +1,9 @@
 {
-  "name": "workspace",
+  "name": "smart-learning-system",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "智慧学习整理系统 - 全学科学习整理与错题管理平台",
+  "main": "electron/main.ts",
   "type": "module",
   "scripts": {
     "client:dev": "vite",
@@ -10,7 +12,12 @@
     "preview": "vite preview",
     "check": "tsc --noEmit",
     "server:dev": "nodemon",
-    "dev": "concurrently \"npm run client:dev\" \"npm run server:dev\""
+    "dev": "concurrently \"npm run client:dev\" \"npm run server:dev\"",
+    "electron:dev": "concurrently \"npm run client:dev\" \"electron .\"",
+    "electron:build": "npm run build && electron-builder",
+    "electron:build:win": "npm run build && electron-builder --win",
+    "electron:build:mac": "npm run build && electron-builder --mac",
+    "electron:build:linux": "npm run build && electron-builder --linux"
   },
   "dependencies": {
     "@types/katex": "^0.16.8",
