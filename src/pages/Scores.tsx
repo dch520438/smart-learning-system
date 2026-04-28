@@ -15,19 +15,29 @@ import {
 
 export function Scores() {
   const navigate = useNavigate();
-  const { currentSubject, testRecords, addTestRecord } = useAppStore();
+  const { currentSubject, testRecords, addTestRecord, updateTestRecord, deleteTestRecord, knowledgeItems, memorizeItems, mistakeItems, patternItems } = useAppStore();
   const [timeRange, setTimeRange] = useState<'week' | 'month' | 'all' | 'custom'>('all');
   const [customDateRange, setCustomDateRange] = useState({
     start: '',
     end: ''
   });
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     title: '',
-    score: 0,
-    totalScore: 100,
-    date: new Date().toISOString().split('T')[0],
-    timeSpent: 600, // 10分钟
+    score: '',
+    totalScore: '',
+    timeSpent: '',
+  });
+  const [showPrintModal, setShowPrintModal] = useState(false);
+  const [printOptions, setPrintOptions] = useState({
+    knowledge: false,
+    memorize: false,
+    mistakes: false,
+    patterns: false,
+    analysis: false,
+    mindmap: false,
   });
 
   if (!currentSubject) {
@@ -104,24 +114,141 @@ export function Scores() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // 创建一个测试记录
-    addTestRecord({
-      subjectId: currentSubject.id,
-      title: formData.title,
-      score: formData.score,
-      totalScore: formData.totalScore,
-      questions: [], // 手动添加的记录没有具体题目
-      answers: {}, // 手动添加的记录没有具体答案
-      timeSpent: formData.timeSpent,
-    });
+    if (isEditMode && editingRecordId) {
+      updateTestRecord(editingRecordId, {
+        title: formData.title,
+        score: parseFloat(formData.score) || 0,
+        totalScore: parseFloat(formData.totalScore) || 100,
+        timeSpent: parseFloat(formData.timeSpent) * 60 || 600,
+      });
+    } else {
+      addTestRecord({
+        subjectId: currentSubject.id,
+        title: formData.title,
+        score: parseFloat(formData.score) || 0,
+        totalScore: parseFloat(formData.totalScore) || 100,
+        questions: [],
+        answers: {},
+        timeSpent: parseFloat(formData.timeSpent) * 60 || 600,
+      });
+    }
     
     setIsModalOpen(false);
+    setIsEditMode(false);
+    setEditingRecordId(null);
     setFormData({
       title: '',
-      score: 0,
-      totalScore: 100,
-      date: new Date().toISOString().split('T')[0],
-      timeSpent: 600,
+      score: '',
+      totalScore: '',
+      timeSpent: '',
+    });
+  };
+
+  const handleEdit = (record: typeof testRecords[0]) => {
+    setIsEditMode(true);
+    setEditingRecordId(record.id);
+    setFormData({
+      title: record.title,
+      score: record.score.toString(),
+      totalScore: record.totalScore.toString(),
+      timeSpent: (record.timeSpent / 60).toString(),
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleDelete = (recordId: string) => {
+    if (confirm('确定要删除这条记录吗？')) {
+      deleteTestRecord(recordId);
+    }
+  };
+
+  const handlePrint = () => {
+    let printContent = `<html><head><title>学习资料打印</title><style>
+      body { font-family: 'Microsoft YaHei', sans-serif; margin: 20px; }
+      h1 { text-align: center; color: #333; border-bottom: 2px solid #6366F1; padding-bottom: 10px; }
+      h2 { color: #6366F1; margin-top: 30px; }
+      .section { margin-bottom: 30px; }
+      .item { border-bottom: 1px dashed #ccc; padding: 10px 0; }
+      .item-title { font-weight: bold; color: #333; }
+      .item-content { color: #666; margin-top: 5px; }
+    </style></head><body>`;
+    
+    printContent += `<h1>${currentSubject?.name} - 学习资料</h1>`;
+    
+    if (printOptions.knowledge) {
+      const items = knowledgeItems.filter(item => item.subjectId === currentSubject?.id);
+      printContent += `<div class="section"><h2>知识点 (${items.length})</h2>`;
+      items.forEach(item => {
+        printContent += `<div class="item"><div class="item-title">${item.title}</div><div class="item-content">${item.content}</div></div>`;
+      });
+      printContent += `</div>`;
+    }
+    
+    if (printOptions.memorize) {
+      const items = memorizeItems.filter(item => item.subjectId === currentSubject?.id);
+      printContent += `<div class="section"><h2>必记必背 (${items.length})</h2>`;
+      items.forEach(item => {
+        printContent += `<div class="item"><div class="item-title">${item.title}</div><div class="item-content">${item.content}</div></div>`;
+      });
+      printContent += `</div>`;
+    }
+    
+    if (printOptions.mistakes) {
+      const items = mistakeItems.filter(item => item.subjectId === currentSubject?.id);
+      printContent += `<div class="section"><h2>错题整理 (${items.length})</h2>`;
+      items.forEach(item => {
+        printContent += `<div class="item"><div class="item-title">${item.question}</div><div class="item-content">正确答案: ${item.correctAnswer}</div><div class="item-content">解析: ${item.analysis}</div></div>`;
+      });
+      printContent += `</div>`;
+    }
+    
+    if (printOptions.patterns) {
+      const items = patternItems.filter(item => item.subjectId === currentSubject?.id);
+      printContent += `<div class="section"><h2>母题整理 (${items.length})</h2>`;
+      items.forEach(item => {
+        printContent += `<div class="item"><div class="item-title">${item.title}</div><div class="item-content">${item.content}</div></div>`;
+      });
+      printContent += `</div>`;
+    }
+    
+    if (printOptions.analysis) {
+      printContent += `<div class="section"><h2>学习分析</h2>`;
+      printContent += `<div class="item"><div class="item-title">总测试次数</div><div class="item-content">${totalTests}次</div></div>`;
+      printContent += `<div class="item"><div class="item-title">平均分数</div><div class="item-content">${averageScore.toFixed(1)}</div></div>`;
+      printContent += `<div class="item"><div class="item-title">平均正确率</div><div class="item-content">${averageAccuracy.toFixed(1)}%</div></div>`;
+      printContent += `</div>`;
+    }
+    
+    if (printOptions.mindmap) {
+      const items = knowledgeItems.filter(item => item.subjectId === currentSubject?.id);
+      printContent += `<div class="section"><h2>知识思维导图</h2>`;
+      printContent += `<div style="margin-left: 20px;">`;
+      items.forEach(item => {
+        printContent += `<div>${item.title}</div>`;
+        if (item.tags && item.tags.length > 0) {
+          printContent += `<div style="margin-left: 20px;">标签: ${item.tags.join(', ')}</div>`;
+        }
+      });
+      printContent += `</div></div>`;
+    }
+    
+    printContent += `</body></html>`;
+    
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      printWindow.print();
+    }
+    
+    setShowPrintModal(false);
+    setPrintOptions({
+      knowledge: false,
+      memorize: false,
+      mistakes: false,
+      patterns: false,
+      analysis: false,
+      mindmap: false,
     });
   };
 
@@ -140,6 +267,13 @@ export function Scores() {
             >
               <Icon name="plus" size={18} />
               <span>添加记录</span>
+            </button>
+            <button
+              onClick={() => setShowPrintModal(true)}
+              className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-xl font-medium transition-colors flex items-center space-x-2"
+            >
+              <Icon name="printer" size={18} />
+              <span>打印</span>
             </button>
             {(['week', 'month', 'all', 'custom'] as const).map((range) => (
               <button
@@ -273,13 +407,29 @@ export function Scores() {
                         </div>
                       </div>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right mr-4">
                       <div className="text-2xl font-bold text-indigo-600">
                         {record.score}/{record.totalScore}
                       </div>
                       <div className="text-sm text-gray-600">
                         {((record.score / record.totalScore) * 100).toFixed(0)}% 正确率
                       </div>
+                    </div>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => handleEdit(record)}
+                        className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
+                        title="编辑"
+                      >
+                        <Icon name="edit" size={18} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(record.id)}
+                        className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        title="删除"
+                      >
+                        <Icon name="trash-2" size={18} />
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -293,7 +443,7 @@ export function Scores() {
             <div className="bg-white rounded-2xl max-w-md w-full">
               <div className="p-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900">添加分数记录</h2>
+                  <h2 className="text-2xl font-bold text-gray-900">{isEditMode ? '编辑分数记录' : '添加分数记录'}</h2>
                   <button
                     onClick={() => setIsModalOpen(false)}
                     className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -319,53 +469,35 @@ export function Scores() {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">得分</label>
                       <input
-                        type="number"
-                        min="0"
-                        step="0.5"
+                        type="text"
                         value={formData.score}
-                        onChange={(e) => setFormData({ ...formData, score: parseFloat(e.target.value) || 0 })}
+                        onChange={(e) => setFormData({ ...formData, score: e.target.value })}
                         className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                        placeholder="输入得分"
+                        placeholder="输入得分（支持小数）"
                         required
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">总分</label>
                       <input
-                        type="number"
-                        min="1"
-                        step="0.5"
+                        type="text"
                         value={formData.totalScore}
-                        onChange={(e) => setFormData({ ...formData, totalScore: parseFloat(e.target.value) || 1 })}
+                        onChange={(e) => setFormData({ ...formData, totalScore: e.target.value })}
                         className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                        placeholder="输入总分"
+                        placeholder="输入总分（支持小数）"
                         required
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">日期</label>
-                    <input
-                      type="date"
-                      value={formData.date}
-                      onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                      required
-                    />
-                  </div>
-
-                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">用时（分钟）</label>
                     <input
-                      type="number"
-                      min="1"
-                      step="1"
-                      value={formData.timeSpent / 60}
-                      onChange={(e) => setFormData({ ...formData, timeSpent: (parseFloat(e.target.value) || 1) * 60 })}
+                      type="text"
+                      value={formData.timeSpent}
+                      onChange={(e) => setFormData({ ...formData, timeSpent: e.target.value })}
                       className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                      placeholder="输入用时（分钟）"
-                      required
+                      placeholder="输入用时（支持小数）"
                     />
                   </div>
 
@@ -386,6 +518,105 @@ export function Scores() {
                     </button>
                   </div>
                 </form>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showPrintModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl max-w-lg w-full">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900">选择打印内容</h2>
+                  <button
+                    onClick={() => setShowPrintModal(false)}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <Icon name="x" size={24} />
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  <label className="flex items-center space-x-3 p-3 border border-gray-200 rounded-xl hover:bg-gray-50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={printOptions.knowledge}
+                      onChange={(e) => setPrintOptions({ ...printOptions, knowledge: e.target.checked })}
+                      className="w-5 h-5 text-indigo-500 border-gray-300 rounded focus:ring-indigo-500"
+                    />
+                    <span className="font-medium text-gray-700">知识点</span>
+                  </label>
+
+                  <label className="flex items-center space-x-3 p-3 border border-gray-200 rounded-xl hover:bg-gray-50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={printOptions.memorize}
+                      onChange={(e) => setPrintOptions({ ...printOptions, memorize: e.target.checked })}
+                      className="w-5 h-5 text-indigo-500 border-gray-300 rounded focus:ring-indigo-500"
+                    />
+                    <span className="font-medium text-gray-700">必记必背</span>
+                  </label>
+
+                  <label className="flex items-center space-x-3 p-3 border border-gray-200 rounded-xl hover:bg-gray-50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={printOptions.mistakes}
+                      onChange={(e) => setPrintOptions({ ...printOptions, mistakes: e.target.checked })}
+                      className="w-5 h-5 text-indigo-500 border-gray-300 rounded focus:ring-indigo-500"
+                    />
+                    <span className="font-medium text-gray-700">错题整理</span>
+                  </label>
+
+                  <label className="flex items-center space-x-3 p-3 border border-gray-200 rounded-xl hover:bg-gray-50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={printOptions.patterns}
+                      onChange={(e) => setPrintOptions({ ...printOptions, patterns: e.target.checked })}
+                      className="w-5 h-5 text-indigo-500 border-gray-300 rounded focus:ring-indigo-500"
+                    />
+                    <span className="font-medium text-gray-700">母题整理</span>
+                  </label>
+
+                  <label className="flex items-center space-x-3 p-3 border border-gray-200 rounded-xl hover:bg-gray-50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={printOptions.analysis}
+                      onChange={(e) => setPrintOptions({ ...printOptions, analysis: e.target.checked })}
+                      className="w-5 h-5 text-indigo-500 border-gray-300 rounded focus:ring-indigo-500"
+                    />
+                    <span className="font-medium text-gray-700">学习分析</span>
+                  </label>
+
+                  <label className="flex items-center space-x-3 p-3 border border-gray-200 rounded-xl hover:bg-gray-50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={printOptions.mindmap}
+                      onChange={(e) => setPrintOptions({ ...printOptions, mindmap: e.target.checked })}
+                      className="w-5 h-5 text-indigo-500 border-gray-300 rounded focus:ring-indigo-500"
+                    />
+                    <span className="font-medium text-gray-700">思维导图</span>
+                  </label>
+                </div>
+
+                <div className="flex space-x-4 pt-6">
+                  <button
+                    type="button"
+                    onClick={() => setShowPrintModal(false)}
+                    className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
+                  >
+                    取消
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handlePrint}
+                    disabled={!printOptions.knowledge && !printOptions.memorize && !printOptions.mistakes && !printOptions.patterns && !printOptions.analysis && !printOptions.mindmap}
+                    className="flex-1 px-6 py-3 bg-green-500 text-white rounded-xl font-medium hover:bg-green-600 transition-colors flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Icon name="printer" size={20} />
+                    <span>打印</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
