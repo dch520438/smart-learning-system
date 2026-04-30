@@ -1,31 +1,63 @@
-name: PWA Builder Package
+# 智慧学习系统 - GitHub自带Actions 自动打包APK
+name: 智慧学习系统APK自动打包
+
+# 触发规则：推送main分支自动打包，同时支持手动触发打包
 on:
-  # 仅手动触发，避免自动运行
+  push:
+    branches: [ main ]
   workflow_dispatch:
 
+# 打包任务配置
 jobs:
-  build-pwa:
+  build-apk:
+    # 运行环境：GitHub自带的免费云端服务器，无需自己配置
     runs-on: ubuntu-latest
     steps:
-      # 配置兼容的Node.js LTS版本
-      - name: Setup Node.js 24 LTS
+      # 步骤1：拉取你仓库的代码
+      - name: 检出项目代码
+        uses: actions/checkout@v4
+
+      # 步骤2：配置Node.js环境（GitHub原生自带）
+      - name: 配置Node.js环境
         uses: actions/setup-node@v4
         with:
-          node-version: 24.x
-          check-latest: true
+          node-version: 20
+          cache: 'npm'
 
-      # 使用官方正确的pwabuilder包执行打包，彻底解决参数不识别问题
-      - name: Build PWA Packages
-        run: |
-          npx pwabuilder@latest build \
-            "https://dch520438.github.io/smart-learning-system/" \
-            --platforms windows,android \
-            --output ./pwabuilder
+      # 步骤3：安装项目依赖，构建最新生产版本（确保打包的是最新代码）
+      - name: 安装项目依赖
+        run: npm install
+      - name: 构建生产版本
+        run: npm run build
 
-      # 上传打包产物（无论是否成功都上传，方便排查）
-      - name: Upload PWA Build Result
-        if: always()
+      # 步骤4：核心打包环节 - 官方认证的PWA打包，生成安卓APK
+      - name: PWA打包生成安卓APK
+        uses: pwa-builder/pwabuilder-action@v2
+        with:
+          # 【必填】你的GitHub Pages完整访问地址，必须和实际地址完全一致
+          siteUrl: 'https://dch520438.github.io/smart-learning-system/'
+          # 【必填】安卓应用唯一包名，反向域名格式，只能包含字母、数字、点、下划线，不能有中文/特殊符号
+          packageId: 'io.github.dch520438.smartlearning'
+          # 【必填】APP名称，安装后显示在安卓桌面
+          appName: '智慧学习系统'
+          # 【必填】APP版本号（用户可见），每次更新APP必须递增
+          appVersion: '1.0.0'
+          # 【必填】安卓内部版本号，必须是整数，每次更新必须比上一版数字大
+          versionCode: 1
+          # 【可选】APP启动页面类名，保持默认即可
+          activityName: '.MainActivity'
+          # 【可选】最低支持的安卓版本，24对应安卓7.0，覆盖99%的安卓设备
+          minSdkVersion: 24
+          # 【可选】屏幕方向：fullSensor自动旋转，portrait固定竖屏，landscape固定横屏
+          screenOrientation: 'fullSensor'
+          # 【可选】APP所需权限，你的项目有拍照、语音输入功能，必须保留以下权限
+          permissions: 'CAMERA,RECORD_AUDIO,READ_EXTERNAL_STORAGE,WRITE_EXTERNAL_STORAGE'
+
+      # 步骤5：将打包好的APK上传为GitHub产物，供你下载
+      - name: 上传APK打包产物
         uses: actions/upload-artifact@v4
         with:
-          name: pwa-install-packages
-          path: ./pwabuilder
+          # 下载时显示的文件名
+          name: 智慧学习系统-安卓APK安装包
+          # 打包生成的APK所在路径，固定不变
+          path: ./android
