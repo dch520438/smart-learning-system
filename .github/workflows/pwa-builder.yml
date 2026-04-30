@@ -1,4 +1,4 @@
-# 智慧学习系统 - 无交互稳定版APK自动打包
+# 智慧学习系统 安卓APK自动打包
 name: 智慧学习系统APK自动打包
 
 on:
@@ -17,7 +17,7 @@ jobs:
       - name: 检出项目代码
         uses: actions/checkout@v4
 
-      # 配置Java JDK并全局设置JAVA_HOME环境变量
+      # 配置Java JDK 17
       - name: 配置Java JDK 17环境
         uses: actions/setup-java@v4
         with:
@@ -25,20 +25,20 @@ jobs:
           distribution: 'temurin'
         id: java_setup
 
-      # 配置Node.js环境
+      # 配置Node.js 20
       - name: 配置Node.js 20环境
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
 
-      # 前置校验：确认manifest文件可正常访问（避免后续打包失败）
+      # 前置校验：manifest文件可访问
       - name: 校验manifest文件可用性
         run: |
           curl -f https://dch520438.github.io/smart-learning-system/manifest.webmanifest
           echo "manifest文件校验通过"
 
-      # 安装项目依赖并构建生产版本
+      # 安装依赖并构建
       - name: 安装项目依赖
         run: npm install
       - name: 构建生产版本
@@ -48,31 +48,50 @@ jobs:
       - name: 安装Bubblewrap打包工具
         run: npm install -g @bubblewrap/cli
 
-      # 核心修复：无交互初始化打包配置，自动应答所有提问，强制使用已安装的JDK
-      - name: 初始化APK打包配置
+      # 核心修复：预生成配置文件，完全跳过交互式提问，彻底解决卡死
+      - name: 生成打包配置并构建APK
         run: |
-          # 全局设置JAVA_HOME，让Bubblewrap直接识别已安装的JDK
+          # 全局设置JAVA_HOME
           export JAVA_HOME=${{ steps.java_setup.outputs.path }}
           # 创建打包目录
           mkdir -p ./apk-build
-          # 用yes命令自动应答所有交互式提问，输入No拒绝安装JDK，强制使用现有环境
-          yes "No" | bubblewrap init \
-            --manifest=https://dch520438.github.io/smart-learning-system/manifest.webmanifest \
-            --directory=./apk-build
+          # 预创建twa-manifest.json配置文件，完全跳过交互式init
+          cat > ./apk-build/twa-manifest.json << EOF
+          {
+            "packageId": "io.github.dch520438.smartlearning",
+            "name": "智慧学习系统",
+            "launcherName": "智慧学习",
+            "display": "standalone",
+            "themeColor": "#2563eb",
+            "navigationColor": "#000000",
+            "backgroundColor": "#f0f5ff",
+            "enableNotifications": false,
+            "startUrl": "https://dch520438.github.io/smart-learning-system/",
+            "host": "dch520438.github.io",
+            "path": "/smart-learning-system/",
+            "deepLinks": [],
+            "fallbackType": "customtabs",
+            "webManifestUrl": "https://dch520438.github.io/smart-learning-system/manifest.webmanifest",
+            "appVersion": "1.0.0",
+            "appVersionCode": 1,
+            "minSdkVersion": 24,
+            "targetSdkVersion": 33,
+            "compileSdkVersion": 33,
+            "buildToolsVersion": "33.0.0",
+            "supportLibrary": "androidx.appcompat:appcompat:1.6.1",
+            "androidxBrowser": "androidx.browser:browser:1.5.0",
+            "signatureType": "debug",
+            "permissions": ["android.permission.CAMERA", "android.permission.RECORD_AUDIO", "android.permission.READ_EXTERNAL_STORAGE", "android.permission.WRITE_EXTERNAL_STORAGE"],
+            "features": ["android.hardware.camera", "android.hardware.microphone"],
+            "orientation": "fullSensor"
+          }
+          EOF
+          # 直接执行构建，跳过init交互，彻底解决卡死
+          bubblewrap build --directory=./apk-build --skipValidation
         env:
           CI: true
 
-      # 无交互执行打包，生成APK
-      - name: 构建生成安卓APK
-        run: |
-          export JAVA_HOME=${{ steps.java_setup.outputs.path }}
-          bubblewrap build \
-            --directory=./apk-build \
-            --skipSigningValidation
-        env:
-          CI: true
-
-      # 上传最终APK安装包
+      # 上传APK安装包
       - name: 上传APK安装包
         uses: actions/upload-artifact@v4
         with:
