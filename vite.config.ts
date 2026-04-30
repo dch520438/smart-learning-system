@@ -19,7 +19,7 @@ export default defineConfig({
     })
   ],
   // 关键：适配路径，避免找不到文件
-  base: '/',
+  base: '/smart-learning-system/',
   build: {
     outDir: 'dist',
     emptyOutDir: true,
