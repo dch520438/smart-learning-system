@@ -1,24 +1,28 @@
-# 智慧学习系统 - GitHub自带Actions 自动打包APK
+# 智慧学习系统 - Google官方Bubblewrap CLI 自动打包APK
 name: 智慧学习系统APK自动打包
 
-# 触发规则：推送main分支自动打包，同时支持手动触发打包
+# 触发规则：推送main分支自动打包，同时支持手动触发
 on:
   push:
     branches: [ main ]
   workflow_dispatch:
 
-# 打包任务配置
+# 权限配置（必须保留，否则无法上传打包产物）
+permissions:
+  contents: read
+  packages: write
+
 jobs:
-  build-apk:
-    # 运行环境：GitHub自带的免费云端服务器，无需自己配置
+  build-and-pack-apk:
+    # GitHub自带免费云端运行环境
     runs-on: ubuntu-latest
     steps:
-      # 步骤1：拉取你仓库的代码
+      # 步骤1：拉取你仓库的最新代码
       - name: 检出项目代码
         uses: actions/checkout@v4
 
-      # 步骤2：配置Node.js环境（GitHub原生自带）
-      - name: 配置Node.js环境
+      # 步骤2：配置Node.js环境（和你的项目版本匹配）
+      - name: 配置Node.js 20环境
         uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -30,34 +34,34 @@ jobs:
       - name: 构建生产版本
         run: npm run build
 
-      # 步骤4：核心打包环节 - 官方认证的PWA打包，生成安卓APK
-      - name: PWA打包生成安卓APK
-        uses: pwa-builder/pwabuilder-action@v2
+      # 步骤4：配置Java环境（Bubblewrap打包必须依赖）
+      - name: 配置Java JDK 17环境
+        uses: actions/setup-java@v4
         with:
-          # 【必填】你的GitHub Pages完整访问地址，必须和实际地址完全一致
-          siteUrl: 'https://dch520438.github.io/smart-learning-system/'
-          # 【必填】安卓应用唯一包名，反向域名格式，只能包含字母、数字、点、下划线，不能有中文/特殊符号
-          packageId: 'io.github.dch520438.smartlearning'
-          # 【必填】APP名称，安装后显示在安卓桌面
-          appName: '智慧学习系统'
-          # 【必填】APP版本号（用户可见），每次更新APP必须递增
-          appVersion: '1.0.0'
-          # 【必填】安卓内部版本号，必须是整数，每次更新必须比上一版数字大
-          versionCode: 1
-          # 【可选】APP启动页面类名，保持默认即可
-          activityName: '.MainActivity'
-          # 【可选】最低支持的安卓版本，24对应安卓7.0，覆盖99%的安卓设备
-          minSdkVersion: 24
-          # 【可选】屏幕方向：fullSensor自动旋转，portrait固定竖屏，landscape固定横屏
-          screenOrientation: 'fullSensor'
-          # 【可选】APP所需权限，你的项目有拍照、语音输入功能，必须保留以下权限
-          permissions: 'CAMERA,RECORD_AUDIO,READ_EXTERNAL_STORAGE,WRITE_EXTERNAL_STORAGE'
+          java-version: '17'
+          distribution: 'temurin'
 
-      # 步骤5：将打包好的APK上传为GitHub产物，供你下载
-      - name: 上传APK打包产物
+      # 步骤5：安装Google官方Bubblewrap CLI打包工具
+      - name: 安装Bubblewrap CLI
+        run: npm install -g @bubblewrap/cli
+
+      # 步骤6：初始化打包配置，自动读取你的PWA manifest文件
+      - name: 初始化APK打包配置
+        run: |
+          bubblewrap init --manifest=https://dch520438.github.io/smart-learning-system/manifest.webmanifest --directory=./apk-build
+        env:
+          CI: true # 禁用交互式输入，自动使用默认配置
+
+      # 步骤7：执行打包，生成可直接安装的APK
+      - name: 构建生成安卓APK
+        run: |
+          bubblewrap build --directory=./apk-build
+        env:
+          CI: true
+
+      # 步骤8：上传打包好的APK，供你下载
+      - name: 上传APK安装包
         uses: actions/upload-artifact@v4
         with:
-          # 下载时显示的文件名
           name: 智慧学习系统-安卓APK安装包
-          # 打包生成的APK所在路径，固定不变
-          path: ./android
+          path: ./apk-build/app-release-signed.apk
