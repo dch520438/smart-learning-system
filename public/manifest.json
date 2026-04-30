@@ -6,7 +6,7 @@
   "orientation": "any",
   "scope": "/",
   "short_name": "智慧学习",
-  "start_url": "/",
+  "start_url": "/smart-learning-system/",
   "theme_color": "#165dff",
   "description": "全学科智慧学习管理系统",
   "lang": "zh",
