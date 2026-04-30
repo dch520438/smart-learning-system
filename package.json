@@ -18,11 +18,22 @@
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.23.0",
     "zustand": "^4.5.2",
-    "recharts": "^2.12.6"
+    "recharts": "^2.12.6",
+    "lucide-react": "^0.511.0",
+    "tailwind-merge": "^3.0.2",
+    "react-quill": "^2.0.0",
+    "uuid": "^14.0.0",
+    "clsx": "^2.1.1",
+    "axios": "^1.15.2",
+    "cheerio": "^1.2.0",
+    "katex": "^0.16.45"
   },
   "devDependencies": {
     "@types/react": "^18.2.66",
     "@types/react-dom": "^18.2.22",
+    "@types/uuid": "^10.0.0",
+    "@types/katex": "^0.16.8",
+    "@types/node": "^22.19.17",
     "@vitejs/plugin-react": "^4.2.1",
     "typescript": "^5.2.2",
     "vite": "^5.2.0",

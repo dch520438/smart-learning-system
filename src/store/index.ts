@@ -32,6 +32,11 @@ interface AppState {
   memorizeItems: MemorizeItem[];
   papers: Paper[];
   
+  // 别名属性（用于兼容代码中的引用）
+  knowledgeItems: KnowledgePoint[];
+  mistakeItems: Question[];
+  patternItems: Question[];
+  
   // 数据操作
   addSubject: (subject: Omit<Subject, 'id' | 'userId'>) => void;
   addKnowledgePoint: (kp: Omit<KnowledgePoint, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => void;
@@ -44,6 +49,8 @@ interface AppState {
   updateNote: (id: string, note: Partial<Note>) => void;
   deleteNote: (id: string) => void;
   addTestRecord: (record: Omit<TestRecord, 'id' | 'createdAt' | 'userId'>) => void;
+  updateTestRecord: (id: string, record: Partial<TestRecord>) => void;
+  deleteTestRecord: (id: string) => void;
   addStudyRecord: (record: Omit<StudyRecord, 'id' | 'createdAt' | 'userId'>) => void;
   updateStudyRecord: (id: string, record: Partial<StudyRecord>) => void;
   deleteStudyRecord: (id: string) => void;
@@ -187,6 +194,11 @@ export const useAppStore = create<AppState>()(
       studyAnalyses: [],
       memorizeItems: [],
       
+      // 别名属性（用于兼容代码中的引用）
+      knowledgeItems: [],
+      mistakeItems: [],
+      patternItems: [],
+      
       // 数据操作
       addSubject: (subject) => set((state) => {
         if (!state.currentUser) return state;
@@ -275,6 +287,16 @@ export const useAppStore = create<AppState>()(
           }]
         };
       }),
+      
+      updateTestRecord: (id, record) => set((state) => ({
+        testRecords: state.testRecords.map(item =>
+          item.id === id ? { ...item, ...record } : item
+        )
+      })),
+      
+      deleteTestRecord: (id) => set((state) => ({
+        testRecords: state.testRecords.filter(item => item.id !== id)
+      })),
       
       addStudyRecord: (record) => set((state) => {
         if (!state.currentUser) return state;
