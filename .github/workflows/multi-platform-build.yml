@@ -1,0 +1,178 @@
+# 智慧学习系统 全平台自动打包工作流
+name: 智慧学习系统全平台打包
+on:
+  # 推送main分支自动打包
+  push:
+    branches: [ main ]
+  # 支持手动触发打包
+  workflow_dispatch:
+
+# 全局权限配置
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  # 任务1：安卓APK打包
+  build-android-apk:
+    runs-on: ubuntu-latest
+    name: 安卓APK打包
+    steps:
+      - name: 检出项目代码
+        uses: actions/checkout@v4
+
+      - name: 配置Java JDK 17环境
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+        id: java_setup
+
+      - name: 配置Node.js 20环境
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: 校验站点和manifest可用性
+        run: |
+          curl -f https://dch520438.github.io/smart-learning-system/
+          curl -f https://dch520438.github.io/smart-learning-system/manifest.webmanifest
+          curl -f https://dch520438.github.io/smart-learning-system/pwa-192x192.png
+          echo "✅ 站点、manifest、图标校验全部通过"
+
+      - name: 安装项目依赖
+        run: npm install
+
+      - name: 构建PWA生产版本
+        run: npm run build:pwa
+
+      - name: 安装稳定版Bubblewrap打包工具
+        run: npm install -g @bubblewrap/cli@1.21.0
+
+      - name: 构建安卓APK（完全无交互，彻底解决卡死问题）
+        run: |
+          # 全局配置JDK环境
+          export JAVA_HOME=${{ steps.java_setup.outputs.path }}
+          export PATH=$JAVA_HOME/bin:$PATH
+          java -version
+
+          # 创建打包目录
+          mkdir -p ./android-build
+
+          # 预生成完整TWA配置，完全跳过交互式init
+          cat > ./android-build/twa-manifest.json << 'EOF'
+          {
+            "packageId": "io.github.dch520438.smartlearning",
+            "name": "智慧学习系统",
+            "launcherName": "智慧学习",
+            "display": "standalone",
+            "themeColor": "#2563eb",
+            "navigationColor": "#000000",
+            "backgroundColor": "#f0f5ff",
+            "enableNotifications": false,
+            "startUrl": "https://dch520438.github.io/smart-learning-system/",
+            "host": "dch520438.github.io",
+            "path": "/smart-learning-system/",
+            "deepLinks": [],
+            "fallbackType": "customtabs",
+            "webManifestUrl": "https://dch520438.github.io/smart-learning-system/manifest.webmanifest",
+            "appVersion": "1.0.0",
+            "appVersionCode": 1,
+            "minSdkVersion": 24,
+            "targetSdkVersion": 33,
+            "compileSdkVersion": 33,
+            "buildToolsVersion": "33.0.0",
+            "supportLibrary": "androidx.appcompat:appcompat:1.6.1",
+            "androidxBrowser": "androidx.browser:browser:1.5.0",
+            "signatureType": "debug",
+            "permissions": [
+              "android.permission.CAMERA",
+              "android.permission.RECORD_AUDIO",
+              "android.permission.READ_EXTERNAL_STORAGE",
+              "android.permission.WRITE_EXTERNAL_STORAGE",
+              "android.permission.INTERNET"
+            ],
+            "features": [
+              "android.hardware.camera",
+              "android.hardware.microphone"
+            ],
+            "orientation": "fullSensor",
+            "siteUrl": "https://dch520438.github.io/smart-learning-system/",
+            "icons": [
+              {
+                "src": "pwa-192x192.png",
+                "sizes": "192x192",
+                "type": "image/png",
+                "purpose": "any"
+              },
+              {
+                "src": "pwa-512x512.png",
+                "sizes": "512x512",
+                "type": "image/png",
+                "purpose": "any"
+              },
+              {
+                "src": "maskable-icon.png",
+                "sizes": "1024x1024",
+                "type": "image/png",
+                "purpose": "maskable"
+              }
+            ]
+          }
+          EOF
+
+          # 直接执行构建，无任何交互式提问
+          bubblewrap build \
+            --directory=./android-build \
+            --nonInteractive \
+            --skipValidation \
+            --skipSigningValidation
+
+      - name: 上传安卓APK安装包
+        uses: actions/upload-artifact@v4
+        with:
+          name: 智慧学习系统-安卓APK安装包
+          path: ./android-build/*.apk
+
+  # 任务2：Windows+麒麟Linux桌面端打包
+  build-desktop-app:
+    runs-on: ubuntu-latest
+    name: Windows+Linux桌面端打包
+    steps:
+      - name: 检出项目代码
+        uses: actions/checkout@v4
+
+      - name: 配置Node.js 20环境
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: 安装Linux打包系统依赖
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libarchive-tools rpm libopenjp2-tools libusb-1.0-0-dev
+
+      - name: 安装项目依赖
+        run: npm install
+
+      - name: 构建Electron适配的前端版本
+        run: npm run build:electron
+
+      - name: 打包Windows EXE + Linux安装包
+        run: npm run electron:build
+
+      - name: 上传Windows EXE安装包
+        uses: actions/upload-artifact@v4
+        with:
+          name: 智慧学习系统-Windows-EXE安装包
+          path: ./electron-dist/*.exe
+
+      - name: 上传麒麟Linux安装包
+        uses: actions/upload-artifact@v4
+        with:
+          name: 智慧学习系统-麒麟Linux安装包
+          path: |
+            ./electron-dist/*.AppImage
+            ./electron-dist/*.deb
