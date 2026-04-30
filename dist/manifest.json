@@ -1,0 +1,27 @@
+{
+  "background_color": "#ffffff",
+  "dir": "auto",
+  "display": "standalone",
+  "name": "智慧学习系统",
+  "orientation": "any",
+  "scope": "/",
+  "short_name": "智慧学习",
+  "start_url": "/",
+  "theme_color": "#165dff",
+  "description": "全学科智慧学习管理系统",
+  "lang": "zh",
+  "id": "zk",
+  "display_override": [
+    "browser",
+    "fullscreen",
+    "minimal-ui",
+    "standalone",
+    "window-controls-overlay"
+  ],
+  "categories": [
+    "education"
+  ],
+  "edge_side_panel": {
+    "preferred_width": 0
+  }
+}
